@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Shniro AI Solver</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- KaTeX (Math Rendering) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- Marked (Markdown Parser) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <!-- TOP BAR -->
+    <header class="top-bar glass">
+        <div class="logo">🧠 Shniro × Strink</div>
+        <button id="themeToggle" class="theme-btn">🌙</button>
+    </header>
+
+    <!-- MAIN APP -->
+    <main class="app">
+        <h1 class="title">Shniro</h1>
+        <p class="subtitle">Smart • Simple • Student Friendly</p>
+
+        <!-- INPUT -->
+        <section class="glass input-card">
+            <textarea id="prompt" placeholder="✍️ Type your question here…"></textarea>
+            <div class="actions">
+                <label class="upload-btn">
+                    📷 Upload Image
+                    <input type="file" id="imageInput" hidden />
+                </label>
+                <button id="solveBtn" class="solve-btn">✨ Solve</button>
+            </div>
+            <div id="uploadStatus" class="upload-status"></div>
+        </section>
+
+        <!-- OUTPUT -->
+        <section id="output" class="glass output-card">
+            <div class="output-header">🤖 AI Answer</div>
+            <div id="outputContent">
+                <div id="answerText" class="answer-text">Your ans will apeare here</div>
+            </div>
+        </section>
+    </main>
+
+    <footer>© 2026 Shniro</footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
