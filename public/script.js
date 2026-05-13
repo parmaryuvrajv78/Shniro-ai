@@ -4,6 +4,7 @@
 const themeToggle = document.getElementById("themeToggle");
 const solveBtn = document.getElementById("solveBtn");
 const outputContent = document.getElementById("outputContent");
+<<<<<<< HEAD
 const chatHistory = document.getElementById("chatHistory");
 const imageInput = document.getElementById("imageInput");
 const uploadStatus = document.getElementById("uploadStatus");
@@ -96,19 +97,35 @@ if (!userSession && !isAuthPage) {
 } else if (userSession) {
   checkAuth();
 }
+=======
+const answerText = document.getElementById("answerText");
+const imageInput = document.getElementById("imageInput");
+const uploadStatus = document.getElementById("uploadStatus");
+const promptInput = document.getElementById("prompt");
+
+let uploadedImage = null;
+let displayMode = "rich";
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 
 /* ======================
     THEME & AUTO-GROW
 ====================== */
 if (localStorage.getItem("theme") === "light") {
   document.body.classList.add("light");
+<<<<<<< HEAD
   themeToggle.innerHTML = '<i data-lucide="sun"></i><span class="sidebar-label">Mode</span>';
 } else {
   themeToggle.innerHTML = '<i data-lucide="moon"></i><span class="sidebar-label">Mode</span>';
+=======
+  themeToggle.textContent = "☀️";
+} else {
+  themeToggle.textContent = "🌙";
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
 themeToggle.addEventListener("click", () => {
   const isLight = document.body.classList.toggle("light");
+<<<<<<< HEAD
   themeToggle.innerHTML = (isLight ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>') + '<span class="sidebar-label">Mode</span>';
   localStorage.setItem("theme", isLight ? "light" : "dark");
   lucide.createIcons();
@@ -133,6 +150,10 @@ sidebarBackdrop?.addEventListener("click", () => {
   sidebarEl?.classList.remove("open");
   sidebarBackdrop?.classList.remove("visible");
   document.body.style.overflow = "auto";
+=======
+  themeToggle.textContent = isLight ? "☀️" : "🌙";
+  localStorage.setItem("theme", isLight ? "light" : "dark");
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 });
 
 function autoGrow(el) {
@@ -142,6 +163,7 @@ function autoGrow(el) {
 autoGrow(promptInput);
 promptInput.addEventListener("input", () => autoGrow(promptInput));
 
+<<<<<<< HEAD
 resetBtn?.addEventListener("click", async () => {
   promptInput.value = "";
   autoGrow(promptInput);
@@ -164,10 +186,20 @@ imageInput.addEventListener("change", () => {
     uploadedImage = imageInput.files[0];
     uploadStatus.innerHTML = `<i data-lucide="check-circle"></i> ${uploadedImage.name}`;
     lucide.createIcons();
+=======
+/* ======================
+    IMAGE UPLOAD
+====================== */
+imageInput.addEventListener("change", () => {
+  if (imageInput.files.length > 0) {
+    uploadedImage = imageInput.files[0];
+    uploadStatus.textContent = `✅ ${uploadedImage.name}`;
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
   }
 });
 
 /* ======================
+<<<<<<< HEAD
     SOLVE
 ====================== */
 solveBtn.addEventListener("click", async () => {
@@ -221,6 +253,18 @@ solveBtn.addEventListener("click", async () => {
 
   promptInput.value = "";
   autoGrow(promptInput);
+=======
+    SOLVE (WITH LOADER)
+====================== */
+solveBtn.addEventListener("click", async () => {
+  const prompt = promptInput.value.trim();
+  if (!prompt && !uploadedImage) {
+    answerText.textContent = "⚠️ Please enter a question or upload an image.";
+    return;
+  }
+
+  answerText.innerHTML = "<span>⏳ Shniro is thinking...</span>";
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
   solveBtn.disabled = true;
 
   try {
@@ -228,6 +272,7 @@ solveBtn.addEventListener("click", async () => {
     formData.append("prompt", prompt);
     if (uploadedImage) formData.append("image", uploadedImage);
 
+<<<<<<< HEAD
     const res = await fetch("/solve", { method: "POST", body: formData });
     const data = await res.json();
     displayAnswer(data.answer, data.isImage, data.imageUrl);
@@ -273,11 +318,72 @@ function typeWriter(text, rich = false, isImage = false, imageUrl = null) {
       if (isImage && imageUrl) renderImageDownload(imageUrl, target);
       // Final scroll check
       chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' });
+=======
+    const res = await fetch("/solve", {
+      method: "POST",
+      body: formData
+    });
+
+
+    const data = await res.json();
+    const answer = data.answer || data.result || data.output || data.text;
+
+    if (!answer) {
+      answerText.textContent = "⚠️ No answer received.";
+      return;
+    }
+
+    displayAnswer(answer);
+  } catch (err) {
+    console.error(err);
+    answerText.textContent = "❌ Server error.";
+  } finally {
+    solveBtn.disabled = false;
+  }
+});
+
+/* ======================
+    DISPLAY ANSWER
+====================== */
+function displayAnswer(text) {
+  answerText.innerHTML = "";
+  typeWriter(text, displayMode === "rich");
+}
+
+/* ======================
+    IMPROVED TYPING EFFECT
+====================== */
+function typeWriter(text, rich = false) {
+  let i = 0;
+  // We clean the text of common AI spacing issues first
+  const cleanText = text.replace(/\\n/g, '\n');
+
+  function type() {
+    if (i < cleanText.length) {
+      // Append character
+      const currentText = cleanText.substring(0, i + 1);
+
+      if (rich) {
+        // Render Markdown every few characters so it doesn't look like a wall
+        answerText.innerHTML = marked.parse(currentText);
+        renderRichContent();
+      } else {
+        answerText.innerText = currentText;
+      }
+
+      i++;
+      answerText.scrollTop = answerText.scrollHeight;
+      setTimeout(type, 10);
+    } else if (rich) {
+      // Final render to ensure everything is perfect
+      renderRichContent();
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
     }
   }
   type();
 }
 
+<<<<<<< HEAD
 function renderImageDownload(url, targetEl) {
   const container = document.createElement("div");
   container.className = "image-download-container";
@@ -328,3 +434,69 @@ promptInput.addEventListener("keydown", (e) => {
     solveBtn.click();
   }
 });
+=======
+/* ======================
+    STRUCTURED RENDERING (CLEAN LOOK)
+====================== */
+function renderRichContent() {
+  try {
+    // 1. Math Rendering
+    if (typeof renderMathInElement === 'function') {
+      renderMathInElement(answerText, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false }
+        ]
+      });
+    }
+
+    // 2. APPLYING THE "CHATGPT" STYLE (Spacing & Hierarchy)
+    // Paragraph Spacing
+    answerText.querySelectorAll("p").forEach(p => {
+      p.style.cssText = "margin-bottom: 1.5rem; line-height: 1.7; display: block;";
+    });
+
+    // Heading Spacing
+    answerText.querySelectorAll("h1, h2, h3").forEach(h => {
+      h.style.cssText = "margin-top: 1.5rem; margin-bottom: 0.8rem; font-weight: bold; display: block;";
+    });
+
+    // List & Bullet Spacing
+    answerText.querySelectorAll("ul, ol").forEach(list => {
+      list.style.cssText = "margin-bottom: 1.5rem; padding-left: 1.5rem; display: block;";
+    });
+
+    answerText.querySelectorAll("li").forEach(li => {
+      li.style.cssText = "margin-bottom: 0.6rem; line-height: 1.6; display: list-item;";
+    });
+
+    // 3. Code Block Copy Buttons
+    const codeBlocks = answerText.querySelectorAll("pre");
+    codeBlocks.forEach((block) => {
+      if (block.querySelector(".copy-btn")) return; // Prevent duplicate buttons
+
+      const copyBtn = document.createElement("button");
+      copyBtn.innerText = "Copy Code";
+      copyBtn.className = "copy-btn";
+      copyBtn.style.cssText = "float:right; cursor:pointer; font-size:11px; padding:3px 8px; border-radius:4px; border:none; background:rgba(255,255,255,0.2); color:inherit;";
+
+      copyBtn.onclick = () => {
+        const codeText = block.querySelector("code") ? block.querySelector("code").innerText : block.innerText;
+        navigator.clipboard.writeText(codeText);
+        copyBtn.innerText = "Copied!";
+        setTimeout(() => copyBtn.innerText = "Copy Code", 2000);
+      };
+
+      block.prepend(copyBtn);
+      block.style.cssText = "background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; overflow-x: auto; clear: both; margin: 10px 0;";
+    });
+
+  } catch (e) {
+    console.warn("Render error:", e);
+  }
+}
+
+window.setDisplayMode = mode => {
+  displayMode = mode;
+};
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d

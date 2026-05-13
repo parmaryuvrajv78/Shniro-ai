@@ -1,6 +1,9 @@
 node_modules/
 .env
 uploads/
+<<<<<<< HEAD
 data/
 *.log
 .DS_Store
+=======
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d

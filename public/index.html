@@ -4,7 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <title>Shniro AI Solver</title>
+<<<<<<< HEAD
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+=======
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 
     <!-- Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -17,6 +21,7 @@
     <!-- Marked (Markdown Parser) -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+<<<<<<< HEAD
     <!-- PWA & Mobile Optimization -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#0a192f">
@@ -50,12 +55,17 @@
     </script>
 
 
+=======
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 </head>
 
 <body>
 
     <!-- TOP BAR -->
     <header class="top-bar glass">
+<<<<<<< HEAD
         <div class="logo">
             <img class="logo-mark" src="icon.png" alt="Shniro Logo">
             <span>Shniro</span>
@@ -113,19 +123,46 @@
                     <input type="file" id="imageInput" hidden />
                 </label>
                 <button id="solveBtn" class="solve-btn" type="button"><i data-lucide="sparkles"></i><span> Solve</span></button>
+=======
+        <div class="logo">🧠 Shniro × Strink</div>
+        <button id="themeToggle" class="theme-btn">🌙</button>
+    </header>
+
+    <!-- MAIN APP -->
+    <main class="app">
+        <h1 class="title">Shniro</h1>
+        <p class="subtitle">Smart • Simple • Student Friendly</p>
+
+        <!-- INPUT -->
+        <section class="glass input-card">
+            <textarea id="prompt" placeholder="✍️ Type your question here…"></textarea>
+            <div class="actions">
+                <label class="upload-btn">
+                    📷 Upload Image
+                    <input type="file" id="imageInput" hidden />
+                </label>
+                <button id="solveBtn" class="solve-btn">✨ Solve</button>
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
             </div>
             <div id="uploadStatus" class="upload-status"></div>
         </section>
 
         <!-- OUTPUT -->
         <section id="output" class="glass output-card">
+<<<<<<< HEAD
             <div class="output-header"><i data-lucide="bot"></i> AI Answer</div>
             <div id="outputContent">
                 <div id="chatHistory" class="chat-history"></div>
+=======
+            <div class="output-header">🤖 AI Answer</div>
+            <div id="outputContent">
+                <div id="answerText" class="answer-text">Your ans will apeare here</div>
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
             </div>
         </section>
     </main>
 
+<<<<<<< HEAD
     <!-- LOGOUT MODAL -->
     <div id="logoutModal" class="modal-overlay hidden">
         <div class="glass modal-content">
@@ -149,3 +186,11 @@
 </body>
 
 </html>
+=======
+    <footer>© 2026 Shniro</footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
+>>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
