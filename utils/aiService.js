@@ -1,0 +1,123 @@
+import fetch from "node-fetch";
+import fs from "fs";
+
+export const GROQ_MODEL = "llama-3.1-8b-instant";
+export const GEMINI_MODEL = "gemini-2.0-flash";
+
+/**
+ * Detects if the user wants an image
+ */
+export function isImageRequest(question) {
+    const keywords = ["generate image", "create image", "draw", "make an image", "show me an image", "generate an image"];
+    return keywords.some(k => question.toLowerCase().includes(k));
+}
+
+/**
+ * Refines a user prompt into a high-quality image prompt using Gemini
+ */
+export async function getRefinedImagePrompt(question, apiKey) {
+    const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{
+                    role: "user",
+                    parts: [{ text: `The user wants to generate an image: "${question}". Create a highly detailed, 1-sentence prompt for an image generator. IMPORTANT: Only output the plain text prompt string, NO JSON, NO markdown. Just the prompt text.` }]
+                }]
+            })
+        }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Gemini Refiner failed");
+
+    let prompt = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || question;
+    
+    // Clean JSON or markdown if present
+    let clean = prompt.replace(/^```json\s*|```\s*$/g, "").trim();
+    if (clean.startsWith("{")) {
+        try {
+            const parsed = JSON.parse(clean);
+            prompt = parsed.prompt || parsed.action_input?.prompt || parsed.action_input || prompt;
+        } catch (e) { /* ignore */ }
+    }
+    return prompt;
+}
+
+/**
+ * Analyzes an image using Gemini Vision
+ */
+export async function analyzeImage(imagePath, mimetype, question, apiKey) {
+    const imageBuffer = fs.readFileSync(imagePath);
+    const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { inlineData: { mimeType: mimetype, data: imageBuffer.toString("base64") } },
+                        { text: question }
+                    ]
+                }]
+            })
+        }
+    );
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Gemini Image Analysis failed");
+    return data?.candidates?.[0]?.content?.parts?.map(p => p.text).join("\n\n");
+}
+
+/**
+ * Sends a text request to Groq or fallback to Gemini
+ */
+export async function getChatResponse(conversation, question, systemInstruction, keys) {
+    // 1. Try Groq
+    try {
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${keys.GROQ}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: GROQ_MODEL,
+                messages: [{ role: "system", content: systemInstruction }, ...conversation],
+                temperature: 0.3
+            })
+        });
+
+        if (groqRes.ok) {
+            const data = await groqRes.json();
+            return { answer: data.choices[0].message.content, source: "groq" };
+        }
+    } catch (err) {
+        console.error("Groq Error:", err.message);
+    }
+
+    // 2. Fallback to Gemini
+    const geminiRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${keys.GEMINI}`,
+        {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                system_instruction: { parts: [{ text: systemInstruction }] },
+                contents: [{ role: "user", parts: [{ text: question }] }]
+            })
+        }
+    );
+
+    const data = await geminiRes.json();
+    if (!geminiRes.ok) throw new Error(data.error?.message || "Gemini Fallback failed");
+
+    return { 
+        answer: data?.candidates?.[0]?.content?.parts?.[0]?.text || "AI unavailable.",
+        source: "gemini"
+    };
+}

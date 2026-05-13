@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Shniro AI Solver</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- KaTeX (Math Rendering) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- Marked (Markdown Parser) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <!-- PWA & Mobile Optimization -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a192f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Shniro">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+    <meta name="description" content="Smart, Simple, and Student-Friendly AI Solver">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Shniro">
+    <meta name="msapplication-config" content="browserconfig.xml">
+    <meta name="msapplication-TileColor" content="#0a192f">
+    <meta name="msapplication-TileImage" content="icon.png">
+
+    <!-- Icons (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- Register Service Worker -->
+    <script>
+        if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+                navigator.serviceWorker.register("sw.js")
+                    .then(() => console.log("Shniro PWA Ready"))
+                    .catch(err => console.log("PWA failed", err));
+            });
+        }
+    </script>
+
+
+</head>
+
+<body>
+
+    <!-- TOP BAR -->
+    <header class="top-bar glass">
+        <div class="logo">
+            <img class="logo-mark" src="icon.png" alt="Shniro Logo">
+            <span>Shniro</span>
+        </div>
+        <div class="header-actions">
+            <button id="menuBtn" class="theme-btn icon-btn" type="button" title="Menu">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar glass" aria-label="App sidebar">
+        <nav class="sidebar-nav">
+            <div class="nav-top">
+                <button id="resetBtn" class="sidebar-btn" title="New Chat">
+                    <i data-lucide="plus-square"></i>
+                    <span class="sidebar-label">New</span>
+                </button>
+
+                <button id="themeToggle" class="sidebar-btn" title="Toggle Theme">
+                    <i data-lucide="moon"></i>
+                    <span class="sidebar-label">Mode</span>
+                </button>
+            </div>
+
+            <div class="nav-bottom">
+                <a href="auth.html" id="upgradeBtn" class="sidebar-btn upgrade-btn" title="Upgrade Plan">
+                    <i data-lucide="zap"></i>
+                    <span class="sidebar-label">Upgrade</span>
+                </a>
+
+                <a href="auth.html" id="accountBtn" class="sidebar-btn" title="Account Settings">
+                    <i data-lucide="user"></i>
+                    <span class="sidebar-label">Account</span>
+                </a>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- SIDEBAR BACKDROP (mobile) -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop hidden" aria-hidden="true"></div>
+
+    <!-- MAIN APP -->
+    <main class="app">
+        <h1 class="title">Shniro</h1>
+        <p class="subtitle">Smart - Simple - Student Friendly</p>
+
+        <!-- INPUT -->
+        <section class="glass input-card">
+            <textarea id="prompt" placeholder="Type your question here..."></textarea>
+            <div class="actions">
+                <label class="upload-btn">
+                    <i data-lucide="image"></i><span> Upload Image</span>
+                    <input type="file" id="imageInput" hidden />
+                </label>
+                <button id="solveBtn" class="solve-btn" type="button"><i data-lucide="sparkles"></i><span> Solve</span></button>
+            </div>
+            <div id="uploadStatus" class="upload-status"></div>
+        </section>
+
+        <!-- OUTPUT -->
+        <section id="output" class="glass output-card">
+            <div class="output-header"><i data-lucide="bot"></i> AI Answer</div>
+            <div id="outputContent">
+                <div id="chatHistory" class="chat-history"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- LOGOUT MODAL -->
+    <div id="logoutModal" class="modal-overlay hidden">
+        <div class="glass modal-content">
+            <div class="modal-icon"><i data-lucide="log-out"></i></div>
+            <h3>Sign Out?</h3>
+            <p>Are you sure you want to log out of your Shniro account?</p>
+            <div class="modal-actions">
+                <button id="cancelLogout" class="modal-btn secondary">Cancel</button>
+                <button id="confirmLogout" class="modal-btn primary">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>Shniro is an AI. It can make mistakes.</footer>
+    <footer>(c) 2026 Shniro</footer>
+
+    <script src="script.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
