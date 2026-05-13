@@ -254,7 +254,7 @@ app.get("/proxy-image", async (req, res) => {
   }
 });
 
-app.listen(PORT, "0.0.0.0", () => {
+app.listen(PORT, () => {
 =======
 app.use(cors());
 app.use(express.json());
