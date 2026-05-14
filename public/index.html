@@ -82,11 +82,19 @@
                 </button>
             </div>
 
+            <!-- HISTORY SECTION -->
+            <div class="nav-history" id="navHistory">
+                <div class="history-label">Recent Chats</div>
+                <div id="historyList" class="history-list">
+                    <!-- History items will be injected here -->
+                </div>
+            </div>
+
             <div class="nav-bottom">
-                <a href="auth.html" id="upgradeBtn" class="sidebar-btn upgrade-btn" title="Upgrade Plan">
+                <button id="upgradeBtn" class="sidebar-btn upgrade-btn" title="Upgrade Plan">
                     <i data-lucide="zap"></i>
                     <span class="sidebar-label">Upgrade</span>
-                </a>
+                </button>
 
                 <a href="auth.html" id="accountBtn" class="sidebar-btn" title="Account Settings">
                     <i data-lucide="user"></i>
@@ -106,6 +114,12 @@
 
         <!-- INPUT -->
         <section class="glass input-card">
+            <div id="imagePreviewContainer" class="image-preview-container hidden">
+                <img id="imagePreview" src="" alt="Preview">
+                <button id="removeImageBtn" class="remove-image-btn" title="Remove image">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
             <textarea id="prompt" placeholder="Type your question here..."></textarea>
             <div class="actions">
                 <label class="upload-btn">
@@ -125,6 +139,40 @@
             </div>
         </section>
     </main>
+
+    <!-- UPGRADE MODAL -->
+    <div id="upgradeModal" class="modal-overlay hidden">
+        <div class="glass modal-content upgrade-modal">
+            <div class="modal-icon"><i data-lucide="zap"></i></div>
+            <h3>Upgrade to Premium</h3>
+            <p>Get unlimited scans, faster AI responses, and exclusive educational features.</p>
+            <div class="plan-details">
+                <div class="plan-price">$4.99<span>/month</span></div>
+                <ul class="plan-features">
+                    <li><i data-lucide="check"></i> Unlimited Image Analysis</li>
+                    <li><i data-lucide="check"></i> Priority Groq Access</li>
+                    <li><i data-lucide="check"></i> Advanced Math Solving</li>
+                </ul>
+            </div>
+            <div class="modal-actions">
+                <button id="closeUpgrade" class="modal-btn secondary">Maybe Later</button>
+                <button id="startPremium" class="modal-btn primary-gradient">Go Pro</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DELETE CONFIRM MODAL -->
+    <div id="confirmModal" class="modal-overlay hidden">
+        <div class="glass modal-content">
+            <div class="modal-icon warning"><i data-lucide="alert-triangle"></i></div>
+            <h3>Delete Chat?</h3>
+            <p>This action cannot be undone. This conversation will be permanently removed from your history.</p>
+            <div class="modal-actions">
+                <button id="cancelDelete" class="modal-btn secondary">Cancel</button>
+                <button id="confirmDelete" class="modal-btn danger">Delete Permanently</button>
+            </div>
+        </div>
+    </div>
 
     <!-- LOGOUT MODAL -->
     <div id="logoutModal" class="modal-overlay hidden">

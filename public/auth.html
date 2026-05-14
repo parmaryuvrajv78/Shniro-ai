@@ -428,7 +428,7 @@
             const confirmPassword = document.getElementById('confirmPassword').value;
             const btn = e.target.querySelector('button');
             
-            if (password !== confirmPassword) return alert('Passwords do not match!');
+            if (password !== confirmPassword) return showToast('Passwords do not match!', 'error');
             
             try {
                 btn.disabled = true;

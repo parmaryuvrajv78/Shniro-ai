@@ -51,6 +51,19 @@ export async function getRefinedImagePrompt(question, apiKey) {
  */
 export async function analyzeImage(imagePath, mimetype, question, apiKey) {
     const imageBuffer = fs.readFileSync(imagePath);
+    
+    const analysisPrompt = `You are Shniro, a professional AI student assistant.
+    Analyze the provided image and address the user's request: "${question}".
+    
+    Rules:
+    - If the image contains a problem (math, science, etc.), solve it step-by-step.
+    - If there are diagrams, explain them clearly.
+    - Use KaTeX ($...$) for all mathematical expressions and formulas.
+    - Format your response with clear headings and bullet points for readability.
+    - If the image is unclear, ask for a better photo while providing what you can see.
+    
+    Be accurate, encouraging, and academic.`;
+
     const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
         {
@@ -61,7 +74,7 @@ export async function analyzeImage(imagePath, mimetype, question, apiKey) {
                     role: "user",
                     parts: [
                         { inlineData: { mimeType: mimetype, data: imageBuffer.toString("base64") } },
-                        { text: question }
+                        { text: analysisPrompt }
                     ]
                 }]
             })
@@ -69,8 +82,20 @@ export async function analyzeImage(imagePath, mimetype, question, apiKey) {
     );
 
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Gemini Image Analysis failed");
-    return data?.candidates?.[0]?.content?.parts?.map(p => p.text).join("\n\n");
+    if (!res.ok) {
+        if (data.error?.code === 429 || data.error?.message?.toLowerCase().includes("quota")) {
+            return "Shniro's vision brain is currently busy (Limit reached). Please try again in a minute!";
+        }
+        console.error("Gemini Error:", JSON.stringify(data));
+        throw new Error(data.error?.message || "Gemini Image Analysis failed");
+    }
+
+    const candidate = data?.candidates?.[0];
+    if (!candidate) {
+        return "I'm sorry, I couldn't analyze this image. It might be due to safety filters or the image was too complex.";
+    }
+
+    return candidate.content?.parts?.map(p => p.text).join("\n\n") || "No text could be extracted from this image.";
 }
 
 /**
@@ -114,7 +139,12 @@ export async function getChatResponse(conversation, question, systemInstruction,
     );
 
     const data = await geminiRes.json();
-    if (!geminiRes.ok) throw new Error(data.error?.message || "Gemini Fallback failed");
+    if (!geminiRes.ok) {
+        if (data.error?.code === 429 || data.error?.message?.toLowerCase().includes("quota")) {
+            return { answer: "Shniro is currently taking a short breath (Quota limit). Please try again in 1 minute!", source: "gemini" };
+        }
+        throw new Error(data.error?.message || "Gemini Fallback failed");
+    }
 
     return { 
         answer: data?.candidates?.[0]?.content?.parts?.[0]?.text || "AI unavailable.",

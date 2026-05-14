@@ -38,14 +38,26 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 
+// Authentication Middleware
+const authenticateToken = (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "shniro_secret");
+    req.user = { id: decoded.userId };
+    next();
+  } catch (err) {
+    res.status(401).json({ error: "Invalid token" });
+  }
+};
+
 // Explicit Routes
 app.get("/", (req, res) => {
   const token = req.cookies.token;
   if (!token) {
     return res.redirect("/auth.html");
   }
-  // Optional: You could verify the token here too, 
-  // but a simple cookie presence check is usually enough for the initial redirect.
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
@@ -88,70 +100,45 @@ let conversation = [];
 // ======================
 
 app.post("/api/auth/signup", async (req, res) => {
-  console.log("📥 Signup attempt:", req.body.email);
-  if (!isDbConnected) {
-    console.error("❌ Signup failed: Database not connected");
-    return res.status(503).json({ error: "Database offline. Please check connectivity or Atlas IP whitelist." });
-  }
+  if (!isDbConnected) return res.status(503).json({ error: "Database offline" });
   try {
     const { username, email, password } = req.body;
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) {
-      console.warn("⚠️ Signup failed: User already exists", email);
-      return res.status(400).json({ error: "Username or email already exists" });
-    }
+    if (existingUser) return res.status(400).json({ error: "User already exists" });
 
     const user = new User({ username, email, password });
     await user.save();
-    console.log("✅ User created successfully:", email);
-    res.status(201).json({ message: "User created successfully" });
+    res.status(201).json({ message: "User created" });
   } catch (err) {
-    console.error("🔥 Signup error:", err);
-    res.status(500).json({ error: "Server error during signup" });
+    res.status(500).json({ error: "Signup error" });
   }
 });
 
 app.post("/api/auth/login", async (req, res) => {
-  console.log("📥 Login attempt:", req.body.email);
-  if (!isDbConnected) {
-    console.error("❌ Login failed: Database not connected");
-    return res.status(503).json({ error: "Database offline. Please check connectivity or Atlas IP whitelist." });
-  }
+  if (!isDbConnected) return res.status(503).json({ error: "Database offline" });
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user || !(await user.comparePassword(password))) {
-      console.warn("⚠️ Login failed: Invalid credentials for", email);
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ error: "Invalid credentials" });
     }
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "shniro_secret", { expiresIn: "7d" });
     res.cookie("token", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
-    console.log("✅ Login successful:", email);
     res.json({ message: "Login successful", user: { id: user._id, username: user.username, email: user.email } });
   } catch (err) {
-    console.error("🔥 Login error:", err);
-    res.status(500).json({ error: "Server error during login" });
+    res.status(500).json({ error: "Login error" });
   }
 });
 
 app.post("/api/auth/logout", (req, res) => {
   res.clearCookie("token");
-  res.json({ message: "Logged out successfully" });
+  res.json({ message: "Logged out" });
 });
 
-app.get("/api/auth/me", async (req, res) => {
+app.get("/api/auth/me", authenticateToken, async (req, res) => {
   try {
-    const token = req.cookies.token;
-    if (!token) return res.status(401).json({ error: "Not authenticated" });
-    
-    // If DB is offline, we can't verify the user fully, but we shouldn't crash
-    if (!isDbConnected) {
-      return res.status(503).json({ error: "DB Offline" });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "shniro_secret");
-    const user = await User.findById(decoded.userId).select("-password");
+    const user = await User.findById(req.user.id).select("-password");
     res.json({ user });
   } catch (err) {
     res.status(401).json({ error: "Invalid session" });
@@ -159,7 +146,7 @@ app.get("/api/auth/me", async (req, res) => {
 });
 
 // ======================
-// CORE LOGIC
+// CHAT ROUTES
 // ======================
 
 app.post("/reset", (req, res) => {
@@ -171,7 +158,6 @@ app.post("/solve", upload.single("image"), async (req, res) => {
   const question = req.body.prompt?.trim() || "Explain clearly.";
   let userId = null;
 
-  // Check if user is logged in
   try {
     const token = req.cookies.token;
     if (token) {
@@ -183,20 +169,15 @@ app.post("/solve", upload.single("image"), async (req, res) => {
   try {
     let result;
 
-    // 1. Image Generation
     if (ai.isImageRequest(question) && !req.file) {
       const refinedPrompt = await ai.getRefinedImagePrompt(question, process.env.GEMINI_API_KEY);
       const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(refinedPrompt)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 1000000)}`;
       result = { answer: `**Designed for you:**\n\n*Prompt: ${refinedPrompt}*`, imageUrl, isImage: true };
-    } 
-    // 2. Image Analysis
-    else if (req.file) {
+    } else if (req.file) {
       const answer = await ai.analyzeImage(req.file.path, req.file.mimetype, question, process.env.GEMINI_API_KEY);
       fs.unlinkSync(req.file.path);
       result = { answer };
-    } 
-    // 3. Text Chat
-    else {
+    } else {
       const wantsDetail = ["detail", "depth", "step by step"].some(k => question.toLowerCase().includes(k));
       const systemInstruction = wantsDetail
         ? "You are Shniro, a helpful AI tutor. Provide a detailed explanation."
@@ -213,7 +194,6 @@ app.post("/solve", upload.single("image"), async (req, res) => {
       result = { answer: response.answer };
     }
 
-    // ✅ SAVE TO MONGODB (if connected and user logged in)
     if (isDbConnected && userId && result.answer) {
       const newChat = new Chat({
         userId,
@@ -226,10 +206,27 @@ app.post("/solve", upload.single("image"), async (req, res) => {
     }
 
     res.json(result);
-
   } catch (err) {
-    console.error("Solve Error:", err);
-    res.json({ answer: "Shniro is busy. Try again soon." });
+    console.error("❌ Solve error detailed:", err);
+    res.status(500).json({ error: "Failed to generate answer", details: err.message });
+  }
+});
+
+app.get("/api/chats", authenticateToken, async (req, res) => {
+  try {
+    const chats = await Chat.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(20);
+    res.json(chats);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch chats" });
+  }
+});
+
+app.delete("/api/chats/:id", authenticateToken, async (req, res) => {
+  try {
+    await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete chat" });
   }
 });
 

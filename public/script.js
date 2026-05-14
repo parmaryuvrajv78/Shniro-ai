@@ -13,12 +13,42 @@ const menuBtn = document.getElementById("menuBtn");
 const sidebarEl = document.querySelector(".sidebar");
 const sidebarBackdrop = document.getElementById("sidebarBackdrop");
 const accountBtn = document.getElementById("accountBtn");
+const historyList = document.getElementById("historyList");
+const imagePreviewContainer = document.getElementById("imagePreviewContainer");
+const imagePreview = document.getElementById("imagePreview");
+const removeImageBtn = document.getElementById("removeImageBtn");
+const upgradeBtn = document.getElementById("upgradeBtn");
+const upgradeModal = document.getElementById("upgradeModal");
+const closeUpgrade = document.getElementById("closeUpgrade");
+const startPremium = document.getElementById("startPremium");
+const confirmModal = document.getElementById("confirmModal");
+const cancelDelete = document.getElementById("cancelDelete");
+const confirmDeleteBtn = document.getElementById("confirmDelete");
 
 let currentUser = null;
 let uploadedImage = null;
 let displayMode = "rich";
 let currentAnswerEl = null; // tracks the active answer div for typing
 let hasInteracted = false; // tracks if the user has sent at least one prompt
+
+/* ======================
+    NOTIFICATION SYSTEM
+====================== */
+function showNotification(message, icon = "info") {
+  // Remove existing notifications first
+  document.querySelectorAll(".custom-notification").forEach(n => n.remove());
+  
+  const notifyEl = document.createElement("div");
+  notifyEl.className = "custom-notification glass";
+  notifyEl.innerHTML = `<i data-lucide="${icon}"></i><span>${message}</span>`;
+  document.body.appendChild(notifyEl);
+  lucide.createIcons();
+  
+  setTimeout(() => {
+    notifyEl.classList.add("fade-out");
+    setTimeout(() => notifyEl.remove(), 400);
+  }, 3000);
+}
 
 /* ======================
     NATIVE FEEL HELPERS
@@ -94,8 +124,136 @@ const userSession = localStorage.getItem('shniro_user');
 if (!userSession && !isAuthPage) {
   window.location.href = '/auth.html';
 } else if (userSession) {
-  checkAuth();
+  checkAuth().then(() => {
+    fetchHistory();
+  });
 }
+
+/* ======================
+    CHAT HISTORY LOGIC
+====================== */
+async function fetchHistory() {
+  if (!currentUser) return;
+  try {
+    const res = await fetch("/api/chats");
+    const chats = await res.json();
+    if (res.ok && historyList) {
+      historyList.innerHTML = chats.map(chat => `
+        <div class="history-item">
+          <div class="history-item-content" onclick="loadChat('${chat._id}')" title="${chat.prompt}">
+            ${chat.prompt}
+          </div>
+          <button class="delete-chat-btn" onclick="event.stopPropagation(); deleteChat('${chat._id}')" title="Delete chat">
+            <i data-lucide="trash-2"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+  } catch (err) {
+    console.error("Failed to fetch history:", err);
+  }
+}
+
+let pendingDeleteId = null;
+
+async function deleteChat(chatId) {
+  pendingDeleteId = chatId;
+  confirmModal?.classList.remove("hidden");
+  hapticFeedback('medium');
+}
+
+cancelDelete?.addEventListener("click", () => {
+  confirmModal?.classList.add("hidden");
+  pendingDeleteId = null;
+});
+
+confirmDeleteBtn?.addEventListener("click", async () => {
+  if (!pendingDeleteId) return;
+  try {
+    const res = await fetch(`/api/chats/${pendingDeleteId}`, { method: "DELETE" });
+    if (res.ok) {
+      showNotification("Chat deleted successfully", "trash-2");
+      fetchHistory();
+    }
+  } catch (err) {
+    console.error("Delete chat error:", err);
+    showNotification("Failed to delete chat", "alert-circle");
+  } finally {
+    confirmModal?.classList.add("hidden");
+    pendingDeleteId = null;
+  }
+});
+
+// Add to window for onclick
+window.deleteChat = deleteChat;
+
+// Global variable to store loaded chats for quick access
+let loadedChats = {};
+
+async function loadChat(chatId) {
+  // For simplicity, we'll re-fetch or find in existing list
+  try {
+    const res = await fetch("/api/chats");
+    const chats = await res.json();
+    const chat = chats.find(c => c._id === chatId);
+    if (chat) {
+      chatHistory.innerHTML = "";
+      hasInteracted = true;
+      document.body.classList.add("post-first");
+      
+      const userBubble = document.createElement("div");
+      userBubble.className = "chat-bubble user";
+      userBubble.innerHTML = `<div class="user-prompt">${chat.prompt}</div>`;
+      chatHistory.appendChild(userBubble);
+
+      const aiBubble = document.createElement("div");
+      aiBubble.className = "chat-bubble ai";
+      aiBubble.innerHTML = `
+        <div class="bubble-header"><i data-lucide="bot" class="ai-icon"></i></div>
+        <div class="answer-text">${marked.parse(chat.response)}</div>
+      `;
+      chatHistory.appendChild(aiBubble);
+      
+      if (chat.isImage && chat.imageUrl) {
+        renderImageDownload(chat.imageUrl, aiBubble.querySelector(".answer-text"));
+      }
+      
+      lucide.createIcons();
+      renderRichContent(aiBubble.querySelector(".answer-text"));
+      chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' });
+      
+      // Close sidebar on mobile after loading
+      if (window.innerWidth <= 640) {
+        sidebarEl?.classList.remove("open");
+        sidebarBackdrop?.classList.remove("visible");
+        document.body.style.overflow = "auto";
+      }
+    }
+  } catch (err) {
+    console.error("Load chat error:", err);
+  }
+}
+
+// Add to window for onclick
+window.loadChat = loadChat;
+
+/* ======================
+    UPGRADE MODAL
+====================== */
+upgradeBtn?.addEventListener("click", () => {
+  upgradeModal.classList.remove("hidden");
+  hapticFeedback('light');
+});
+
+closeUpgrade?.addEventListener("click", () => {
+  upgradeModal.classList.add("hidden");
+});
+
+startPremium?.addEventListener("click", () => {
+  showNotification("Premium checkout feature coming soon!", "zap");
+  upgradeModal.classList.add("hidden");
+});
 
 /* ======================
     THEME & AUTO-GROW
@@ -143,6 +301,7 @@ autoGrow(promptInput);
 promptInput.addEventListener("input", () => autoGrow(promptInput));
 
 resetBtn?.addEventListener("click", async () => {
+  hapticFeedback('heavy');
   promptInput.value = "";
   autoGrow(promptInput);
   imageInput.value = "";
@@ -152,7 +311,36 @@ resetBtn?.addEventListener("click", async () => {
   hasInteracted = false;
   document.body.classList.remove("post-first");
   await fetch("/reset", { method: "POST" }).catch(() => {});
+  clearImage();
+  fetchHistory(); // Refresh history
 });
+
+/* ======================
+    IMAGE HANDLING
+====================== */
+imageInput.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  uploadedImage = file;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    imagePreview.src = event.target.result;
+    imagePreviewContainer.classList.remove("hidden");
+    uploadStatus.textContent = "✓ Image selected";
+  };
+  reader.readAsDataURL(file);
+});
+
+removeImageBtn.addEventListener("click", clearImage);
+
+function clearImage() {
+  imageInput.value = "";
+  uploadedImage = null;
+  imagePreviewContainer.classList.add("hidden");
+  imagePreview.src = "";
+  uploadStatus.textContent = "";
+}
 
 /* ======================
     IMAGE UPLOAD
@@ -232,13 +420,13 @@ solveBtn.addEventListener("click", async () => {
     const res = await fetch("/solve", { method: "POST", body: formData });
     const data = await res.json();
     displayAnswer(data.answer, data.isImage, data.imageUrl);
+    fetchHistory(); // Refresh history with new item
   } catch (err) {
     currentAnswerEl.textContent = "❌ Error connecting to Shniro.";
+    showNotification("Failed to get answer. Please try again.", "alert-circle");
   } finally {
     solveBtn.disabled = false;
-    uploadedImage = null;
-    imageInput.value = "";
-    uploadStatus.textContent = "";
+    clearImage();
   }
 });
 
@@ -291,7 +479,10 @@ function renderImageDownload(url, targetEl) {
   const dl = document.createElement("button");
   dl.innerHTML = '<i data-lucide="download"></i> Download';
   dl.className = "solve-btn";
-  dl.onclick = () => window.open(`/proxy-image?url=${encodeURIComponent(url)}`, "_blank");
+  dl.onclick = () => {
+    window.open(`/proxy-image?url=${encodeURIComponent(url)}`, "_blank");
+    showNotification("Opening download link...", "download");
+  };
 
   container.appendChild(img);
   container.appendChild(dl);
