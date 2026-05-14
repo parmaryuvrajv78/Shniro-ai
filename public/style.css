@@ -1,6 +1,5 @@
 * {
   box-sizing: border-box;
-<<<<<<< HEAD
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -72,17 +71,6 @@ button:active, .sidebar-btn:active, .upload-btn:active, .solve-btn:active, a.sid
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
-=======
-}
-
-/* ---------- Base / Theme ---------- */
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: "Inter", system-ui, sans-serif;
-  background: radial-gradient(circle at top left, #0f766e, #020617);
-  color: #e5e7eb;
-  transition: background 0.4s, color 0.4s;
 >>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
@@ -92,7 +80,6 @@ body.light {
   color: #0f172a;
 }
 
-<<<<<<< HEAD
 body.light ::-webkit-scrollbar-thumb {
   background: rgba(0,0,0,0.15);
 }
@@ -114,9 +101,6 @@ body.light .top-bar {
 body.light .logo, body.light .logo span {
   color: #0f172a;
 }
-
-=======
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 /* ---------- Glass ---------- */
 .glass {
   background: rgba(255, 255, 255, 0.08);
@@ -128,7 +112,6 @@ body.light .logo, body.light .logo span {
 
 /* ---------- Top bar ---------- */
 .top-bar {
-<<<<<<< HEAD
   position: fixed;
   top: 0;
   left: 0;
@@ -310,29 +293,12 @@ body.light .logo, body.light .logo span {
   max-width: 90%;
   width: 400px;
   animation: slideDown 0.3s ease-out;
-=======
-  max-width: 1100px;
-  margin: 20px auto;
-  padding: 14px 22px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
-
-.logo { font-weight: 600; }
-
-.theme-btn {
-  background: none;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
 /* ---------- Main layout ---------- */
 .app {
   max-width: 900px;
-<<<<<<< HEAD
   margin: 28px auto 24px auto;
   padding: 20px;
   text-align: center;
@@ -402,35 +368,6 @@ textarea {
 .input-card textarea:focus {
   border-color: rgba(100, 255, 218, 0.4);
   box-shadow: 0 0 15px rgba(100, 255, 218, 0.1);
-=======
-  margin: auto;
-  padding: 20px;
-  text-align: center;
-}
-
-.title { font-size: 36px; font-weight: 700; }
-
-.subtitle { opacity: 0.75; margin-bottom: 30px; }
-
-/* ---------- Input Card ---------- */
-.input-card { padding: 22px; margin-bottom: 26px; }
-
-textarea {
-  width: 100%;
-  min-height: 150px;
-  max-height: 380px; /* matches auto-grow cap */
-  padding: 20px;
-  border-radius: 16px;
-  border: none;
-  outline: none;
-  background: rgba(0,0,0,0.35);
-  color: inherit;
-  font-size: 16px;
-  line-height: 1.5;
-  resize: none; /* prevent manual resize */
-  overflow-y: auto; /* allow scroll if content beyond max */
-  transition: box-shadow 0.18s ease, background 0.18s ease;
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
 textarea:focus {
@@ -447,19 +384,12 @@ textarea:focus {
 
 /* ---------- Actions ---------- */
 .actions {
-<<<<<<< HEAD
   display: flex;
   gap: 10px;
   justify-content: flex-end;
   margin-top: 12px;
   align-items: center;
   transition: margin 0.3s ease;
-=======
-  margin-top: 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
 .upload-btn {
@@ -468,7 +398,6 @@ textarea:focus {
   background: rgba(255,255,255,0.12);
   border: 1px solid rgba(255,255,255,0.18);
   cursor: pointer;
-<<<<<<< HEAD
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -476,9 +405,6 @@ textarea:focus {
   transition: transform 0.12s, background 0.12s, width 0.35s ease, height 0.35s ease, padding 0.35s ease, border-radius 0.35s ease;
   color: inherit;
   font-size: 14px;
-=======
-  transition: transform 0.12s, background 0.12s;
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
 .upload-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.18); }
@@ -490,7 +416,6 @@ textarea:focus {
   background: linear-gradient(135deg, #00ffd5, #00c6ff);
   font-weight: 600;
   cursor: pointer;
-<<<<<<< HEAD
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -498,14 +423,10 @@ textarea:focus {
   color: #0a192f;
   font-size: 15px;
   transition: transform 0.12s, box-shadow 0.12s, width 0.35s ease, height 0.35s ease, padding 0.35s ease, border-radius 0.35s ease;
-=======
-  transition: transform 0.12s, box-shadow 0.12s;
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
 .solve-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,255,213,0.18); }
 
-<<<<<<< HEAD
 .solve-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
 /* ---------- Upload status ---------- */
@@ -514,22 +435,12 @@ textarea:focus {
   color: #22c55e;
   font-size: 13px;
   text-align: right;
-=======
-.solve-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-/* ---------- Upload status ---------- */
-.upload-status {
-  margin-top: 10px;
-  color: #22c55e;
-  font-size: 14px;
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
 /* ---------- Output ---------- */
 .output-card { padding: 0; text-align: left; }
 
 .output-header {
-<<<<<<< HEAD
   padding: 16px 22px;
   font-weight: 600;
   display: flex;
@@ -554,18 +465,6 @@ textarea:focus {
   font-size: 16px;
   line-height: 1.6;
   min-height: 100px;
-=======
-  padding: 14px 20px;
-  font-weight: 600;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
-}
-
-#outputContent {
-  padding: 22px;
-  font-size: 16px;
-  line-height: 1.8;
-  min-height: 120px;
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
 /* ---------- ChatGPT-style formatting ---------- */
@@ -615,7 +514,6 @@ textarea:focus {
   font-weight: 600;
 }
 
-<<<<<<< HEAD
 /* Better Markdown Styling */
 #outputContent pre {
   background: rgba(0, 0, 0, 0.3);
@@ -645,16 +543,12 @@ textarea:focus {
   overflow-y: hidden;
   padding: 10px 0;
 }
-
-=======
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 @keyframes pulse {
   0% { opacity: 0.4; transform: scale(0.98); }
   50% { opacity: 1; transform: scale(1); }
   100% { opacity: 0.4; transform: scale(0.98); }
 }
 
-<<<<<<< HEAD
 /* ---------- Chat History & Bubbles ---------- */
 .chat-history {
   display: flex;
@@ -909,11 +803,6 @@ body.post-first .output-card {
 body.post-first footer {
   display: none;
 }
-
-/* Removed hardcoded left since it's now handled by the dynamic --sidebar-offset variable */
-
-=======
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 /* ---------- Footer ---------- */
 footer {
   text-align: center;
@@ -924,7 +813,6 @@ footer {
 
 /* ---------- Responsiveness ---------- */
 @media (max-width: 640px) {
-<<<<<<< HEAD
   :root { --sidebar-offset: 0px; }
   body { padding-top: 84px; }
   .top-bar {
@@ -1024,10 +912,6 @@ footer {
   .sidebar-backdrop.visible { display: block; }
 
   .app { margin-left: 16px; margin-right: 16px; }
-=======
-  .title { font-size: 28px; }
-  textarea { min-height: 120px; }
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 }
 
 /* Existing styles above... */
@@ -1046,7 +930,6 @@ footer {
   padding-top: 16px;
 }
 
-<<<<<<< HEAD
 /* ---------- Modals ---------- */
 .modal-overlay {
   position: fixed;
@@ -1141,16 +1024,12 @@ footer {
 .modal-btn:active {
   transform: translateY(0);
 }
-
-=======
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 /* Dark mode: use a darker border */
 body.light .steps,
 body.light .final-answer {
   border-top-color: rgba(0,0,0,0.1);
 }
 
-<<<<<<< HEAD
 body.light .modal-content {
   background: rgba(255, 255, 255, 0.95);
   color: #0a192f;
@@ -1162,9 +1041,6 @@ body.light .modal-btn.secondary {
   color: #0a192f;
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
-
-=======
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
 /* Section headings */
 .explanation h3,
 .steps h3,
@@ -1172,8 +1048,6 @@ body.light .modal-btn.secondary {
   font-size: 20px;
   font-weight: 600;
 }
-<<<<<<< HEAD
-
 /* ---------- Image Generation Styles ---------- */
 #outputContent img {
   max-width: 100%;
@@ -1410,9 +1284,3 @@ body.light .auth-link-btn:hover {
     font-size: 1rem;
   }
 }
-
-
-
-
-=======
->>>>>>> 4fc803ab8be52c812e3e6d75abd016eeb2ea255d
