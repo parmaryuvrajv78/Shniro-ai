@@ -537,6 +537,35 @@ function renderRichContent(targetEl) {
       ]
     });
   }
+
+  // Add copy buttons to code blocks
+  const codeBlocks = targetEl.querySelectorAll('pre');
+  codeBlocks.forEach((block) => {
+    // Check if copy button already exists
+    if (block.querySelector('.code-copy-btn')) return;
+
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'code-copy-btn';
+    copyBtn.title = 'Copy code';
+    copyBtn.innerHTML = '<i data-lucide="copy"></i>';
+    
+    copyBtn.onclick = (e) => {
+      e.preventDefault();
+      const codeText = block.innerText;
+      navigator.clipboard.writeText(codeText);
+      
+      copyBtn.innerHTML = '<i data-lucide="check"></i>';
+      hapticFeedback('light');
+      
+      setTimeout(() => {
+        copyBtn.innerHTML = '<i data-lucide="copy"></i>';
+        lucide.createIcons();
+      }, 2000);
+    };
+    
+    block.appendChild(copyBtn);
+    lucide.createIcons();
+  });
 }
 
 /* ======================
