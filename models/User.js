@@ -23,6 +23,19 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  plan: {
+    type: String,
+    enum: ['free', 'premium'],
+    default: 'free',
+  },
+  promptsUsedToday: {
+    type: Number,
+    default: 0,
+  },
+  lastPromptDate: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 userSchema.pre("save", async function () {

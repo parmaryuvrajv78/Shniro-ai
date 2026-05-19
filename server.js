@@ -92,8 +92,7 @@ db.on("disconnected", () => {
 
 const upload = multer({ dest: "uploads/" });
 
-// In-memory conversation (fallback)
-let conversation = [];
+// In-memory conversation removed in favor of db-backed session tracking
 
 // ======================
 // AUTH ROUTES
@@ -150,24 +149,54 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
 // ======================
 
 app.post("/reset", (req, res) => {
-  conversation = [];
   res.json({ ok: true });
 });
 
 app.post("/solve", upload.single("image"), async (req, res) => {
   const question = req.body.prompt?.trim() || "Explain clearly.";
+  const chatId = req.body.chatId;
   let userId = null;
+  let userRecord = null;
 
   try {
     const token = req.cookies.token;
     if (token) {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || "shniro_secret");
       userId = decoded.userId;
+      if (isDbConnected) {
+        userRecord = await User.findById(userId);
+      }
     }
   } catch (e) {}
 
+  // Enforce limits for free users
+  if (userRecord && userRecord.plan === 'free') {
+    const today = new Date().setHours(0,0,0,0);
+    const lastPrompt = new Date(userRecord.lastPromptDate).setHours(0,0,0,0);
+    
+    if (today > lastPrompt) {
+      userRecord.promptsUsedToday = 0;
+      userRecord.lastPromptDate = new Date();
+    }
+    
+    if (userRecord.promptsUsedToday >= 10) {
+      return res.status(403).json({ 
+        error: "Limit Reached", 
+        answer: "You have reached your daily limit of 10 prompts on the free plan. Please upgrade to premium or try again tomorrow." 
+      });
+    }
+    
+    userRecord.promptsUsedToday += 1;
+    await userRecord.save().catch(e => console.error("Error saving user limits:", e));
+  }
+
   try {
     let result;
+    
+    let chatRecord;
+    if (isDbConnected && userId && chatId) {
+      chatRecord = await Chat.findOne({ _id: chatId, userId });
+    }
 
     if (ai.isImageRequest(question) && !req.file) {
       const refinedPrompt = await ai.getRefinedImagePrompt(question, process.env.GEMINI_API_KEY);
@@ -183,26 +212,52 @@ app.post("/solve", upload.single("image"), async (req, res) => {
         ? "You are Shniro, a helpful AI tutor. Provide a detailed explanation."
         : "You are Shniro, a student-friendly AI. Keep it brief.";
 
-      conversation.push({ role: "user", content: question });
-      if (conversation.length > 10) conversation.shift();
+      let dynamicConversation = [];
+      if (chatRecord && chatRecord.messages) {
+        const previousMessages = chatRecord.messages.slice(-5);
+        previousMessages.forEach(msg => {
+          dynamicConversation.push({ role: "user", content: msg.prompt });
+          if (msg.response) {
+            dynamicConversation.push({ role: "assistant", content: msg.response });
+          }
+        });
+      }
+      
+      dynamicConversation.push({ role: "user", content: question });
 
-      const response = await ai.getChatResponse(conversation, question, systemInstruction, {
+      const response = await ai.getChatResponse(dynamicConversation, question, systemInstruction, {
         GROQ: process.env.GROQ_API_KEY,
         GEMINI: process.env.GEMINI_API_KEY
       });
-      conversation.push({ role: "assistant", content: response.answer });
       result = { answer: response.answer };
     }
 
     if (isDbConnected && userId && result.answer) {
-      const newChat = new Chat({
-        userId,
-        prompt: question,
-        response: result.answer,
-        isImage: !!result.isImage,
-        imageUrl: result.imageUrl || null
-      });
-      await newChat.save().catch(e => console.error("Error saving chat:", e));
+      if (chatRecord) {
+        chatRecord.messages.push({
+          prompt: question,
+          response: result.answer,
+          isImage: !!result.isImage,
+          imageUrl: result.imageUrl || null
+        });
+        chatRecord.updatedAt = new Date();
+        await chatRecord.save().catch(e => console.error("Error updating chat:", e));
+      } else {
+        const titleText = question.substring(0, 40) + (question.length > 40 ? "..." : "");
+        chatRecord = new Chat({
+          userId,
+          title: titleText || "New Chat",
+          messages: [{
+            prompt: question,
+            response: result.answer,
+            isImage: !!result.isImage,
+            imageUrl: result.imageUrl || null
+          }]
+        });
+        await chatRecord.save().catch(e => console.error("Error saving new chat:", e));
+      }
+      
+      result.chatId = chatRecord._id;
     }
 
     res.json(result);
@@ -214,8 +269,21 @@ app.post("/solve", upload.single("image"), async (req, res) => {
 
 app.get("/api/chats", authenticateToken, async (req, res) => {
   try {
-    const chats = await Chat.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(20);
-    res.json(chats);
+    const chats = await Chat.find({ userId: req.user.id }).sort({ updatedAt: -1, createdAt: -1 }).limit(20);
+    
+    // Map chats to include title and ensure messages structure for old chats
+    const formattedChats = chats.map(chat => {
+      const title = chat.title || chat.prompt || "Chat Session";
+      const messages = (chat.messages && chat.messages.length > 0) ? chat.messages : [{
+        prompt: chat.prompt,
+        response: chat.response,
+        isImage: chat.isImage,
+        imageUrl: chat.imageUrl
+      }];
+      return { _id: chat._id, title, messages };
+    });
+
+    res.json(formattedChats);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch chats" });
   }

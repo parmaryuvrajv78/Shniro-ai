@@ -6,25 +6,31 @@ const chatSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  prompt: {
-    type: String,
-    required: true,
-  },
-  response: {
-    type: String,
-    required: true,
-  },
-  isImage: {
-    type: Boolean,
-    default: false,
-  },
-  imageUrl: {
+  title: {
     type: String,
   },
+  messages: [{
+    prompt: String,
+    response: String,
+    isImage: {
+      type: Boolean,
+      default: false,
+    },
+    imageUrl: String,
+  }],
+  // Legacy fields for backward compatibility
+  prompt: String,
+  response: String,
+  isImage: Boolean,
+  imageUrl: String,
   createdAt: {
     type: Date,
     default: Date.now,
   },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  }
 });
 
 const Chat = mongoose.model("Chat", chatSchema);

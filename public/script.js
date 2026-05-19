@@ -31,6 +31,7 @@ let uploadedImage = null;
 let displayMode = "rich";
 let currentAnswerEl = null; // tracks the active answer div for typing
 let hasInteracted = false; // tracks if the user has sent at least one prompt
+let currentChatId = null; // tracks the active chat session id
 
 /* ======================
     NOTIFICATION SYSTEM
@@ -141,8 +142,8 @@ async function fetchHistory() {
     if (res.ok && historyList) {
       historyList.innerHTML = chats.map(chat => `
         <div class="history-item">
-          <div class="history-item-content" onclick="loadChat('${chat._id}')" title="${chat.prompt}">
-            ${chat.prompt}
+          <div class="history-item-content" onclick="loadChat('${chat._id}')" title="${chat.title}">
+            ${chat.title}
           </div>
           <button class="delete-chat-btn" onclick="event.stopPropagation(); deleteChat('${chat._id}')" title="Delete chat">
             <i data-lucide="trash-2"></i>
@@ -201,27 +202,54 @@ async function loadChat(chatId) {
     if (chat) {
       chatHistory.innerHTML = "";
       hasInteracted = true;
+      currentChatId = chat._id;
       document.body.classList.add("post-first");
       
-      const userBubble = document.createElement("div");
-      userBubble.className = "chat-bubble user";
-      userBubble.innerHTML = `<div class="user-prompt">${chat.prompt}</div>`;
-      chatHistory.appendChild(userBubble);
+      chat.messages.forEach(msg => {
+        const userBubble = document.createElement("div");
+        userBubble.className = "chat-bubble user";
+        userBubble.innerHTML = `<div class="user-prompt">${msg.prompt || "(Image)"}</div>`;
+        chatHistory.appendChild(userBubble);
 
-      const aiBubble = document.createElement("div");
-      aiBubble.className = "chat-bubble ai";
-      aiBubble.innerHTML = `
-        <div class="bubble-header"><i data-lucide="bot" class="ai-icon"></i></div>
-        <div class="answer-text">${marked.parse(chat.response)}</div>
-      `;
-      chatHistory.appendChild(aiBubble);
-      
-      if (chat.isImage && chat.imageUrl) {
-        renderImageDownload(chat.imageUrl, aiBubble.querySelector(".answer-text"));
-      }
+        const aiBubble = document.createElement("div");
+        aiBubble.className = "chat-bubble ai";
+        
+        const bubbleHeader = document.createElement("div");
+        bubbleHeader.className = "bubble-header";
+        bubbleHeader.innerHTML = '<i data-lucide="bot" class="ai-icon"></i>';
+        
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "copy-btn";
+        copyBtn.innerHTML = '<i data-lucide="copy"></i>';
+        copyBtn.title = "Copy Answer";
+        
+        const ansDiv = document.createElement("div");
+        ansDiv.className = "answer-text";
+        ansDiv.innerHTML = marked.parse(msg.response);
+        
+        copyBtn.onclick = () => {
+          navigator.clipboard.writeText(ansDiv.innerText);
+          copyBtn.innerHTML = '<i data-lucide="check"></i>';
+          hapticFeedback('light');
+          setTimeout(() => {
+            copyBtn.innerHTML = '<i data-lucide="copy"></i>';
+            lucide.createIcons();
+          }, 2000);
+          lucide.createIcons();
+        };
+
+        aiBubble.appendChild(bubbleHeader);
+        aiBubble.appendChild(ansDiv);
+        aiBubble.appendChild(copyBtn);
+        chatHistory.appendChild(aiBubble);
+        
+        if (msg.isImage && msg.imageUrl) {
+          renderImageDownload(msg.imageUrl, ansDiv);
+        }
+      });
       
       lucide.createIcons();
-      renderRichContent(aiBubble.querySelector(".answer-text"));
+      document.querySelectorAll(".answer-text").forEach(renderRichContent);
       chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' });
       
       // Close sidebar on mobile after loading
@@ -347,6 +375,7 @@ resetBtn?.addEventListener("click", async () => {
   uploadStatus.textContent = "";
   chatHistory.innerHTML = "";
   hasInteracted = false;
+  currentChatId = null;
   document.body.classList.remove("post-first");
   await fetch("/reset", { method: "POST" }).catch(() => {});
   clearImage();
@@ -397,10 +426,53 @@ imageInput.addEventListener("change", () => {
 /* ======================
     SOLVE
 ====================== */
+let currentAbortController = null;
+let isTyping = false;
+let isCancelled = false;
+let typingTimeout = null;
+let lastSolveTime = 0;
+
+function cancelCurrentGeneration() {
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+  }
+  isCancelled = true;
+  if (typingTimeout) {
+    clearTimeout(typingTimeout);
+    typingTimeout = null;
+  }
+  isTyping = false;
+  
+  solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Solve</span>';
+  solveBtn.disabled = false;
+  lucide.createIcons();
+  
+  if (currentAnswerEl) {
+    currentAnswerEl.innerHTML += "<br><br><em>[Cancelled by user]</em>";
+  }
+}
+
 solveBtn.addEventListener("click", async () => {
-  hapticFeedback('light');
   const prompt = promptInput.value.trim();
-  if (!prompt && !uploadedImage) return;
+  const now = Date.now();
+
+  if (currentAbortController || isTyping) {
+    // Prevent accidental double-clicks from instantly cancelling the request
+    if (now - lastSolveTime < 500 && !prompt && !uploadedImage) {
+      return;
+    }
+    cancelCurrentGeneration();
+    // If no new prompt is provided, they just wanted to stop the current generation
+    if (!prompt && !uploadedImage) {
+      return;
+    }
+  } else {
+    if (!prompt && !uploadedImage) return;
+  }
+
+  lastSolveTime = Date.now();
+  hapticFeedback('light');
 
   const userBubble = document.createElement("div");
   userBubble.className = "chat-bubble user";
@@ -418,6 +490,11 @@ solveBtn.addEventListener("click", async () => {
   copyBtn.className = "copy-btn";
   copyBtn.innerHTML = '<i data-lucide="copy"></i>';
   copyBtn.title = "Copy Answer";
+  
+  const ansDiv = document.createElement("div");
+  ansDiv.className = "answer-text";
+  ansDiv.innerHTML = '<div><i data-lucide="loader" class="spin"></i> Shniro is thinking...</div>';
+  
   copyBtn.onclick = () => {
     navigator.clipboard.writeText(ansDiv.innerText);
     copyBtn.innerHTML = '<i data-lucide="check"></i>';
@@ -428,10 +505,6 @@ solveBtn.addEventListener("click", async () => {
     }, 2000);
     lucide.createIcons();
   };
-  
-  const ansDiv = document.createElement("div");
-  ansDiv.className = "answer-text";
-  ansDiv.innerHTML = '<div><i data-lucide="loader" class="spin"></i> Shniro is thinking...</div>';
   
   aiBubble.appendChild(bubbleHeader);
   aiBubble.appendChild(ansDiv);
@@ -448,22 +521,43 @@ solveBtn.addEventListener("click", async () => {
 
   promptInput.value = "";
   autoGrow(promptInput);
-  solveBtn.disabled = true;
+  
+  solveBtn.innerHTML = '<i data-lucide="square"></i><span> Stop</span>';
+  lucide.createIcons();
+  isCancelled = false;
+  currentAbortController = new AbortController();
 
   try {
     const formData = new FormData();
     formData.append("prompt", prompt);
+    if (currentChatId) formData.append("chatId", currentChatId);
     if (uploadedImage) formData.append("image", uploadedImage);
 
-    const res = await fetch("/solve", { method: "POST", body: formData });
+    const res = await fetch("/solve", { 
+        method: "POST", 
+        body: formData,
+        signal: currentAbortController.signal 
+    });
     const data = await res.json();
-    displayAnswer(data.answer, data.isImage, data.imageUrl);
-    fetchHistory(); // Refresh history with new item
+    
+    if (!isCancelled) {
+      if (data.chatId) currentChatId = data.chatId;
+      displayAnswer(data.answer, data.isImage, data.imageUrl);
+      fetchHistory(); // Refresh history with new item
+    }
   } catch (err) {
-    currentAnswerEl.textContent = "❌ Error connecting to Shniro.";
-    showNotification("Failed to get answer. Please try again.", "alert-circle");
+    if (err.name === 'AbortError') {
+      console.log('Fetch aborted');
+    } else {
+      currentAnswerEl.textContent = "❌ Error connecting to Shniro.";
+      showNotification("Failed to get answer. Please try again.", "alert-circle");
+    }
   } finally {
-    solveBtn.disabled = false;
+    currentAbortController = null;
+    if (!isTyping && !isCancelled) {
+      solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Solve</span>';
+      lucide.createIcons();
+    }
     clearImage();
   }
 });
@@ -478,8 +572,14 @@ function typeWriter(text, rich = false, isImage = false, imageUrl = null) {
   const cleanText = text || "";
   const target = currentAnswerEl;
   const typingSpeed = 12; // Adjusted for smoothness
+  
+  isTyping = true;
 
   function type() {
+    if (isCancelled) {
+      isTyping = false;
+      return;
+    }
     if (i < cleanText.length) {
       target.innerHTML = marked.parse(cleanText.substring(0, i + 1));
       renderRichContent(target);
@@ -495,8 +595,13 @@ function typeWriter(text, rich = false, isImage = false, imageUrl = null) {
         });
       }
 
-      setTimeout(type, typingSpeed);
+      typingTimeout = setTimeout(type, typingSpeed);
     } else {
+      isTyping = false;
+      if (!currentAbortController) {
+          solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Solve</span>';
+          lucide.createIcons();
+      }
       if (isImage && imageUrl) renderImageDownload(imageUrl, target);
       // Final scroll check
       chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' });
