@@ -62,14 +62,80 @@ function hapticFeedback(type = 'light') {
 }
 
 /* ======================
-    AUTH & SESSION (REMOVED)
+    AUTH & SESSION
 ====================== */
-fetchHistory();
+async function checkAuth() {
+  try {
+    const res = await fetch("/api/auth/me");
+    if (res.status === 401) {
+      localStorage.removeItem('shniro_user');
+      if (!window.location.pathname.includes('auth.html')) {
+        window.location.href = '/auth.html';
+      }
+      return;
+    }
+    const data = await res.json();
+    if (res.ok && data.user) {
+      currentUser = data.user;
+      updateSidebarUser();
+    }
+  } catch (err) {}
+}
+
+function updateSidebarUser() {
+  if (currentUser && accountBtn) {
+    accountBtn.innerHTML = `<i data-lucide="user-check" style="color: #64ffda"></i><span class="sidebar-label">${currentUser.username}</span>`;
+    accountBtn.href = "#";
+    accountBtn.onclick = (e) => {
+      e.preventDefault();
+      const logoutModal = document.getElementById("logoutModal");
+      logoutModal.classList.remove("hidden");
+      hapticFeedback('light');
+    };
+    lucide.createIcons();
+  }
+}
+
+// Modal Event Listeners
+document.getElementById("cancelLogout")?.addEventListener("click", () => {
+  document.getElementById("logoutModal").classList.add("hidden");
+  hapticFeedback('light');
+});
+
+document.getElementById("confirmLogout")?.addEventListener("click", () => {
+  document.getElementById("logoutModal").classList.add("hidden");
+  logout();
+});
+
+document.getElementById("logoutModal")?.addEventListener("click", (e) => {
+  if (e.target.id === "logoutModal") {
+    document.getElementById("logoutModal").classList.add("hidden");
+  }
+});
+
+async function logout() {
+  await fetch("/api/auth/logout", { method: "POST" });
+  localStorage.removeItem("shniro_user");
+  window.location.reload();
+}
+
+// Initial check: Only redirect if we are on the main app and not logged in
+const isAuthPage = window.location.pathname.includes('auth.html');
+const userSession = localStorage.getItem('shniro_user');
+
+if (!userSession && !isAuthPage) {
+  window.location.href = '/auth.html';
+} else if (userSession) {
+  checkAuth().then(() => {
+    fetchHistory();
+  });
+}
 
 /* ======================
     CHAT HISTORY LOGIC
 ====================== */
 async function fetchHistory() {
+  if (!currentUser) return;
   try {
     const res = await fetch("/api/chats");
     const chats = await res.json();

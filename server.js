@@ -7,9 +7,11 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import mongoose from "mongoose";
+import jwt from "jsonwebtoken";
 import cookieParser from "cookie-parser";
 
 // Models
+import User from "./models/User.js";
 import Chat from "./models/Chat.js";
 
 // AI Logic Service
@@ -36,8 +38,31 @@ app.use((req, res, next) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 
+// Authentication Middleware
+const authenticateToken = (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "shniro_secret");
+    req.user = { id: decoded.userId };
+    next();
+  } catch (err) {
+    res.status(401).json({ error: "Invalid token" });
+  }
+};
+
+// Explicit Routes
 app.get("/", (req, res) => {
+  const token = req.cookies.token;
+  if (!token) {
+    return res.redirect("/auth.html");
+  }
   res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.get("/auth.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "auth.html"));
 });
 
 // MongoDB Connection Management
@@ -70,6 +95,56 @@ const upload = multer({ dest: "uploads/" });
 // In-memory conversation removed in favor of db-backed session tracking
 
 // ======================
+// AUTH ROUTES
+// ======================
+
+app.post("/api/auth/signup", async (req, res) => {
+  if (!isDbConnected) return res.status(503).json({ error: "Database offline" });
+  try {
+    const { username, email, password } = req.body;
+    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
+    if (existingUser) return res.status(400).json({ error: "User already exists" });
+
+    const user = new User({ username, email, password });
+    await user.save();
+    res.status(201).json({ message: "User created" });
+  } catch (err) {
+    res.status(500).json({ error: "Signup error" });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  if (!isDbConnected) return res.status(503).json({ error: "Database offline" });
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "shniro_secret", { expiresIn: "7d" });
+    res.cookie("token", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+    res.json({ message: "Login successful", user: { id: user._id, username: user.username, email: user.email } });
+  } catch (err) {
+    res.status(500).json({ error: "Login error" });
+  }
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  res.clearCookie("token");
+  res.json({ message: "Logged out" });
+});
+
+app.get("/api/auth/me", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    res.json({ user });
+  } catch (err) {
+    res.status(401).json({ error: "Invalid session" });
+  }
+});
+
+// ======================
 // CHAT ROUTES
 // ======================
 
@@ -80,13 +155,47 @@ app.post("/reset", (req, res) => {
 app.post("/solve", upload.single("image"), async (req, res) => {
   const question = req.body.prompt?.trim() || "Explain clearly.";
   const chatId = req.body.chatId;
+  let userId = null;
+  let userRecord = null;
+
+  try {
+    const token = req.cookies.token;
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "shniro_secret");
+      userId = decoded.userId;
+      if (isDbConnected) {
+        userRecord = await User.findById(userId);
+      }
+    }
+  } catch (e) {}
+
+  // Enforce limits for free users
+  if (userRecord && userRecord.plan === 'free') {
+    const today = new Date().setHours(0,0,0,0);
+    const lastPrompt = new Date(userRecord.lastPromptDate).setHours(0,0,0,0);
+    
+    if (today > lastPrompt) {
+      userRecord.promptsUsedToday = 0;
+      userRecord.lastPromptDate = new Date();
+    }
+    
+    if (userRecord.promptsUsedToday >= 10) {
+      return res.status(403).json({ 
+        error: "Limit Reached", 
+        answer: "You have reached your daily limit of 10 prompts on the free plan. Please upgrade to premium or try again tomorrow." 
+      });
+    }
+    
+    userRecord.promptsUsedToday += 1;
+    await userRecord.save().catch(e => console.error("Error saving user limits:", e));
+  }
 
   try {
     let result;
     
     let chatRecord;
-    if (isDbConnected && chatId) {
-      chatRecord = await Chat.findOne({ _id: chatId });
+    if (isDbConnected && userId && chatId) {
+      chatRecord = await Chat.findOne({ _id: chatId, userId });
     }
 
     if (ai.isImageRequest(question) && !req.file) {
@@ -123,7 +232,7 @@ app.post("/solve", upload.single("image"), async (req, res) => {
       result = { answer: response.answer };
     }
 
-    if (isDbConnected && result.answer) {
+    if (isDbConnected && userId && result.answer) {
       if (chatRecord) {
         chatRecord.messages.push({
           prompt: question,
@@ -136,6 +245,7 @@ app.post("/solve", upload.single("image"), async (req, res) => {
       } else {
         const titleText = question.substring(0, 40) + (question.length > 40 ? "..." : "");
         chatRecord = new Chat({
+          userId,
           title: titleText || "New Chat",
           messages: [{
             prompt: question,
@@ -157,9 +267,9 @@ app.post("/solve", upload.single("image"), async (req, res) => {
   }
 });
 
-app.get("/api/chats", async (req, res) => {
+app.get("/api/chats", authenticateToken, async (req, res) => {
   try {
-    const chats = await Chat.find().sort({ updatedAt: -1, createdAt: -1 }).limit(20);
+    const chats = await Chat.find({ userId: req.user.id }).sort({ updatedAt: -1, createdAt: -1 }).limit(20);
     
     // Map chats to include title and ensure messages structure for old chats
     const formattedChats = chats.map(chat => {
@@ -179,9 +289,9 @@ app.get("/api/chats", async (req, res) => {
   }
 });
 
-app.delete("/api/chats/:id", async (req, res) => {
+app.delete("/api/chats/:id", authenticateToken, async (req, res) => {
   try {
-    await Chat.findOneAndDelete({ _id: req.params.id });
+    await Chat.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete chat" });
