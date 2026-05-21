@@ -199,9 +199,8 @@ app.post("/solve", upload.single("image"), async (req, res) => {
     }
 
     if (ai.isImageRequest(question) && !req.file) {
-      const refinedPrompt = await ai.getRefinedImagePrompt(question, process.env.GEMINI_API_KEY);
-      const imageUrl = `https://pollinations.ai/p/${encodeURIComponent(refinedPrompt)}?width=1024&height=1024&seed=${Math.floor(Math.random() * 1000000)}`;
-      result = { answer: `**Designed for you:**\n\n*Prompt: ${refinedPrompt}*`, imageUrl, isImage: true };
+      const imageUrl = await ai.generateTogetherImage(question, process.env.TOGETHER_API_KEY);
+      result = { answer: `**Designed for you:**\n\n*Prompt: ${question}*`, imageUrl, isImage: true };
     } else if (req.file) {
       const answer = await ai.analyzeImage(req.file.path, req.file.mimetype, question, process.env.GEMINI_API_KEY);
       fs.unlinkSync(req.file.path);

@@ -8,8 +8,9 @@ export const GEMINI_MODEL = "gemini-2.0-flash";
  * Detects if the user wants an image
  */
 export function isImageRequest(question) {
-    const keywords = ["generate image", "create image", "draw", "make an image", "show me an image", "generate an image"];
-    return keywords.some(k => question.toLowerCase().includes(k));
+    const lower = question.toLowerCase();
+    // Use regex to catch phrases with intermediate words like "generate a car image"
+    return /generate.*image|create.*image|draw|make.*image|show.*image|paint/i.test(lower);
 }
 
 /**
@@ -44,6 +45,36 @@ export async function getRefinedImagePrompt(question, apiKey) {
         } catch (e) { /* ignore */ }
     }
     return prompt;
+}
+
+/**
+ * Generates an image using Together AI
+ */
+export async function generateTogetherImage(prompt, apiKey) {
+    const res = await fetch("https://api.together.xyz/v1/images/generations", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            model: "black-forest-labs/FLUX.1-schnell-Free",
+            prompt: prompt,
+            steps: 4,
+            n: 1,
+            response_format: "b64_json"
+        })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || "Together AI Image Generation failed");
+
+    if (data.data && data.data[0] && data.data[0].b64_json) {
+        return `data:image/png;base64,${data.data[0].b64_json}`;
+    } else if (data.data && data.data[0] && data.data[0].url) {
+        return data.data[0].url;
+    }
+    throw new Error("No image data returned from Together AI");
 }
 
 /**
