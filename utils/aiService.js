@@ -99,9 +99,33 @@ export async function analyzeImage(imagePath, mimetype, question, apiKey) {
 }
 
 /**
- * Sends a text request to Gemini
+ * Sends a text request to Groq or fallback to Gemini
  */
 export async function getChatResponse(conversation, question, systemInstruction, keys) {
+    // 1. Try Groq
+    try {
+        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${keys.GROQ}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: GROQ_MODEL,
+                messages: [{ role: "system", content: systemInstruction }, ...conversation],
+                temperature: 0.3
+            })
+        });
+
+        if (groqRes.ok) {
+            const data = await groqRes.json();
+            return { answer: data.choices[0].message.content, source: "groq" };
+        }
+    } catch (err) {
+        console.error("Groq Error:", err.message);
+    }
+
+    // 2. Fallback to Gemini
     const formattedContents = conversation.map(msg => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }]
@@ -124,7 +148,7 @@ export async function getChatResponse(conversation, question, systemInstruction,
         if (data.error?.code === 429 || data.error?.message?.toLowerCase().includes("quota")) {
             return { answer: "Shniro is currently taking a short breath (Quota limit). Please try again in 1 minute!", source: "gemini" };
         }
-        throw new Error(data.error?.message || "Gemini Chat failed");
+        throw new Error(data.error?.message || "Gemini Fallback failed");
     }
 
     return { 

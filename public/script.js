@@ -151,6 +151,10 @@ async function fetchHistory() {
         </div>
       `).join('');
       lucide.createIcons();
+      
+      if (!currentChatId && chats.length > 0 && !hasInteracted) {
+        loadChat(chats[0]._id);
+      }
     }
   } catch (err) {
     console.error("Failed to fetch history:", err);
