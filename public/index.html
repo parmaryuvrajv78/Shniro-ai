@@ -80,6 +80,11 @@
                     <i data-lucide="moon"></i>
                     <span class="sidebar-label">Mode</span>
                 </button>
+
+                <button id="quizBtn" class="sidebar-btn" title="Quiz Generator">
+                    <i data-lucide="clipboard-list"></i>
+                    <span class="sidebar-label">Quiz</span>
+                </button>
             </div>
 
             <!-- HISTORY SECTION -->
@@ -94,6 +99,11 @@
                 <button id="upgradeBtn" class="sidebar-btn upgrade-btn" title="Upgrade Plan">
                     <i data-lucide="zap"></i>
                     <span class="sidebar-label">Upgrade</span>
+                </button>
+
+                <button id="adminBtn" class="sidebar-btn hidden" title="Admin Analytics">
+                    <i data-lucide="bar-chart-3"></i>
+                    <span class="sidebar-label">Admin</span>
                 </button>
 
                 <a href="auth.html" id="accountBtn" class="sidebar-btn" title="Account Settings">
@@ -189,6 +199,51 @@
                 <button id="cancelLogout" class="modal-btn secondary">Cancel</button>
                 <button id="confirmLogout" class="modal-btn primary">Logout</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ADMIN ANALYTICS MODAL -->
+    <div id="adminModal" class="modal-overlay hidden">
+        <div class="glass modal-content wide-modal">
+            <div class="modal-topline">
+                <div>
+                    <h3>Admin Analytics</h3>
+                    <p>Live overview from users and chat activity.</p>
+                </div>
+                <button id="closeAdmin" class="icon-close" type="button" title="Close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div id="analyticsContent" class="analytics-content">
+                <div class="quiz-loading"><i data-lucide="loader" class="spin"></i> Loading analytics...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUIZ MODAL -->
+    <div id="quizModal" class="modal-overlay hidden">
+        <div class="glass modal-content wide-modal quiz-modal">
+            <div class="modal-topline">
+                <div>
+                    <h3>Topic Quiz</h3>
+                    <p>Generate a quiz, attend it here, and see marks. Attempts are not saved.</p>
+                </div>
+                <button id="closeQuiz" class="icon-close" type="button" title="Close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="quiz-builder">
+                <input id="quizTopic" class="quiz-topic-input" type="text" placeholder="Enter topic, e.g. Newton laws">
+                <select id="quizCount" class="quiz-count" title="Question count">
+                    <option value="5">5 Questions</option>
+                    <option value="8">8 Questions</option>
+                    <option value="10">10 Questions</option>
+                </select>
+                <button id="generateQuizBtn" class="modal-btn primary-gradient" type="button">
+                    <i data-lucide="wand-sparkles"></i> Generate
+                </button>
+            </div>
+            <div id="quizContent" class="quiz-content"></div>
         </div>
     </div>
 

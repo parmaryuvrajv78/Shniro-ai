@@ -187,3 +187,68 @@ export async function getChatResponse(conversation, question, systemInstruction,
         source: "gemini"
     };
 }
+
+function extractJson(text) {
+    const clean = (text || "").replace(/^```json\s*|```$/g, "").trim();
+    try {
+        return JSON.parse(clean);
+    } catch (err) {
+        const match = clean.match(/\{[\s\S]*\}/);
+        if (!match) throw err;
+        return JSON.parse(match[0]);
+    }
+}
+
+function normalizeQuiz(rawQuiz, topic) {
+    const questions = Array.isArray(rawQuiz?.questions) ? rawQuiz.questions : [];
+    const normalized = questions.slice(0, 10).map((q, index) => {
+        const options = Array.isArray(q.options) ? q.options.slice(0, 4).map(String) : [];
+        const answerIndex = Number(q.answerIndex);
+        return {
+            question: String(q.question || `Question ${index + 1}`),
+            options,
+            answerIndex: Number.isInteger(answerIndex) && answerIndex >= 0 && answerIndex < options.length ? answerIndex : 0,
+            explanation: String(q.explanation || "")
+        };
+    }).filter(q => q.options.length === 4);
+
+    if (normalized.length < 3) {
+        throw new Error("Quiz response did not contain enough valid questions");
+    }
+
+    return {
+        topic: String(rawQuiz?.topic || topic),
+        questions: normalized
+    };
+}
+
+/**
+ * Generates a multiple-choice quiz without storing it in the database.
+ */
+export async function generateQuiz(topic, keys, count = 5) {
+    const safeCount = Math.min(Math.max(Number(count) || 5, 3), 10);
+    const systemInstruction = "You create student-friendly multiple-choice quizzes. Return only valid JSON.";
+    const userPrompt = `Create a ${safeCount}-question quiz for the topic "${topic}".
+Return ONLY JSON in this exact shape:
+{
+  "topic": "Topic name",
+  "questions": [
+    {
+      "question": "Question text",
+      "options": ["A", "B", "C", "D"],
+      "answerIndex": 0,
+      "explanation": "One short explanation"
+    }
+  ]
+}
+Rules: exactly 4 options per question, answerIndex must be 0-3, no markdown.`;
+
+    const response = await getChatResponse(
+        [{ role: "user", content: userPrompt }],
+        userPrompt,
+        systemInstruction,
+        keys
+    );
+
+    return normalizeQuiz(extractJson(response.answer), topic);
+}

@@ -94,6 +94,34 @@ const upload = multer({ dest: "uploads/" });
 
 // In-memory conversation removed in favor of db-backed session tracking
 
+function isAdminUser(user) {
+  const configuredAdmins = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "")
+    .split(",")
+    .map(email => email.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (configuredAdmins.length > 0) {
+    return configuredAdmins.includes(user.email?.toLowerCase());
+  }
+
+  return user.username?.toLowerCase() === "admin";
+}
+
+const requireAdmin = async (req, res, next) => {
+  if (!isDbConnected) return res.status(503).json({ error: "Database offline" });
+
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user || !isAdminUser(user)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+    req.adminUser = user;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: "Failed to verify admin access" });
+  }
+};
+
 // ======================
 // AUTH ROUTES
 // ======================
@@ -138,9 +166,92 @@ app.post("/api/auth/logout", (req, res) => {
 app.get("/api/auth/me", authenticateToken, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-    res.json({ user });
+    if (!user) return res.status(401).json({ error: "Invalid session" });
+    const userObject = user.toObject();
+    userObject.isAdmin = isAdminUser(userObject);
+    res.json({ user: userObject });
   } catch (err) {
     res.status(401).json({ error: "Invalid session" });
+  }
+});
+
+// ======================
+// ADMIN ROUTES
+// ======================
+
+app.get("/api/admin/analytics", authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 6);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const [
+      totalUsers,
+      premiumUsers,
+      freeUsers,
+      totalChats,
+      todayChats,
+      weekChats,
+      recentUsers,
+      topUsers
+    ] = await Promise.all([
+      User.countDocuments(),
+      User.countDocuments({ plan: "premium" }),
+      User.countDocuments({ plan: "free" }),
+      Chat.countDocuments(),
+      Chat.countDocuments({ updatedAt: { $gte: todayStart } }),
+      Chat.countDocuments({ updatedAt: { $gte: weekStart } }),
+      User.find().sort({ createdAt: -1 }).limit(5).select("username email plan createdAt"),
+      Chat.aggregate([
+        { $group: { _id: "$userId", chats: { $sum: 1 }, lastActive: { $max: "$updatedAt" } } },
+        { $sort: { chats: -1, lastActive: -1 } },
+        { $limit: 5 },
+        { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
+        { $unwind: "$user" },
+        { $project: { _id: 0, username: "$user.username", email: "$user.email", chats: 1, lastActive: 1 } }
+      ])
+    ]);
+
+    res.json({
+      totals: {
+        users: totalUsers,
+        premiumUsers,
+        freeUsers,
+        chats: totalChats,
+        todayChats,
+        weekChats
+      },
+      recentUsers,
+      topUsers
+    });
+  } catch (err) {
+    console.error("Admin analytics error:", err);
+    res.status(500).json({ error: "Failed to load analytics" });
+  }
+});
+
+// ======================
+// QUIZ ROUTES
+// ======================
+
+app.post("/api/quiz/generate", authenticateToken, async (req, res) => {
+  const topic = req.body.topic?.trim();
+  const count = Number(req.body.count || 5);
+
+  if (!topic) return res.status(400).json({ error: "Topic is required" });
+
+  try {
+    const quiz = await ai.generateQuiz(topic, {
+      GROQ: process.env.GROQ_API_KEY,
+      GEMINI: process.env.GEMINI_API_KEY
+    }, count);
+
+    res.json({ quiz, saved: false });
+  } catch (err) {
+    console.error("Quiz generation error:", err);
+    res.status(500).json({ error: "Failed to generate quiz", details: err.message });
   }
 });
 

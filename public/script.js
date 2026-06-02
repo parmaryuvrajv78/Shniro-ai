@@ -25,6 +25,17 @@ const confirmModal = document.getElementById("confirmModal");
 const cancelDelete = document.getElementById("cancelDelete");
 const confirmDeleteBtn = document.getElementById("confirmDelete");
 const installBtn = document.getElementById("installBtn");
+const adminBtn = document.getElementById("adminBtn");
+const adminModal = document.getElementById("adminModal");
+const closeAdmin = document.getElementById("closeAdmin");
+const analyticsContent = document.getElementById("analyticsContent");
+const quizBtn = document.getElementById("quizBtn");
+const quizModal = document.getElementById("quizModal");
+const closeQuiz = document.getElementById("closeQuiz");
+const quizTopic = document.getElementById("quizTopic");
+const quizCount = document.getElementById("quizCount");
+const generateQuizBtn = document.getElementById("generateQuizBtn");
+const quizContent = document.getElementById("quizContent");
 
 let currentUser = null;
 let uploadedImage = null;
@@ -32,6 +43,7 @@ let displayMode = "rich";
 let currentAnswerEl = null; // tracks the active answer div for typing
 let hasInteracted = false; // tracks if the user has sent at least one prompt
 let currentChatId = null; // tracks the active chat session id
+let activeQuiz = null;
 
 /* ======================
     NOTIFICATION SYSTEM
@@ -42,7 +54,8 @@ function showNotification(message, icon = "info") {
   
   const notifyEl = document.createElement("div");
   notifyEl.className = "custom-notification glass";
-  notifyEl.innerHTML = `<i data-lucide="${icon}"></i><span>${message}</span>`;
+  notifyEl.innerHTML = `<i data-lucide="${icon}"></i><span></span>`;
+  notifyEl.querySelector("span").textContent = message;
   document.body.appendChild(notifyEl);
   lucide.createIcons();
   
@@ -58,6 +71,7 @@ function showNotification(message, icon = "info") {
 function hapticFeedback(type = 'light') {
   if (!window.navigator || !window.navigator.vibrate) return;
   if (type === 'light') window.navigator.vibrate(10);
+  else if (type === 'medium') window.navigator.vibrate(18);
   else if (type === 'heavy') window.navigator.vibrate([15, 10, 15]);
 }
 
@@ -94,6 +108,41 @@ function updateSidebarUser() {
     };
     lucide.createIcons();
   }
+
+  if (adminBtn && currentUser?.isAdmin) {
+    adminBtn.classList.remove("hidden");
+  }
+}
+
+function escapeHtml(value = "") {
+  const div = document.createElement("div");
+  div.textContent = String(value);
+  return div.innerHTML;
+}
+
+function renderSafeMarkdown(value = "") {
+  const wrapper = document.createElement("div");
+  wrapper.innerHTML = marked.parse(String(value));
+
+  wrapper.querySelectorAll("script, style, iframe, object, embed").forEach(node => node.remove());
+  wrapper.querySelectorAll("*").forEach(node => {
+    [...node.attributes].forEach(attr => {
+      const name = attr.name.toLowerCase();
+      const attrValue = attr.value.trim().toLowerCase();
+      if (name.startsWith("on") || ((name === "href" || name === "src") && attrValue.startsWith("javascript:"))) {
+        node.removeAttribute(attr.name);
+      }
+    });
+  });
+
+  return wrapper.innerHTML;
+}
+
+function setUserPrompt(bubble, value) {
+  const promptEl = document.createElement("div");
+  promptEl.className = "user-prompt";
+  promptEl.textContent = value || "(Image)";
+  bubble.appendChild(promptEl);
 }
 
 // Modal Event Listeners
@@ -140,16 +189,31 @@ async function fetchHistory() {
     const res = await fetch("/api/chats");
     const chats = await res.json();
     if (res.ok && historyList) {
-      historyList.innerHTML = chats.map(chat => `
-        <div class="history-item">
-          <div class="history-item-content" onclick="loadChat('${chat._id}')" title="${chat.title}">
-            ${chat.title}
-          </div>
-          <button class="delete-chat-btn" onclick="event.stopPropagation(); deleteChat('${chat._id}')" title="Delete chat">
-            <i data-lucide="trash-2"></i>
-          </button>
-        </div>
-      `).join('');
+      historyList.innerHTML = "";
+      chats.forEach(chat => {
+        const item = document.createElement("div");
+        item.className = "history-item";
+
+        const content = document.createElement("div");
+        content.className = "history-item-content";
+        content.title = chat.title || "Chat Session";
+        content.textContent = chat.title || "Chat Session";
+        content.addEventListener("click", () => loadChat(chat._id));
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.className = "delete-chat-btn";
+        deleteBtn.type = "button";
+        deleteBtn.title = "Delete chat";
+        deleteBtn.innerHTML = '<i data-lucide="trash-2"></i>';
+        deleteBtn.addEventListener("click", (event) => {
+          event.stopPropagation();
+          deleteChat(chat._id);
+        });
+
+        item.appendChild(content);
+        item.appendChild(deleteBtn);
+        historyList.appendChild(item);
+      });
       lucide.createIcons();
       
       if (!currentChatId && chats.length > 0 && !hasInteracted) {
@@ -212,7 +276,7 @@ async function loadChat(chatId) {
       chat.messages.forEach(msg => {
         const userBubble = document.createElement("div");
         userBubble.className = "chat-bubble user";
-        userBubble.innerHTML = `<div class="user-prompt">${msg.prompt || "(Image)"}</div>`;
+        setUserPrompt(userBubble, msg.prompt);
         chatHistory.appendChild(userBubble);
 
         const aiBubble = document.createElement("div");
@@ -229,7 +293,7 @@ async function loadChat(chatId) {
         
         const ansDiv = document.createElement("div");
         ansDiv.className = "answer-text";
-        ansDiv.innerHTML = marked.parse(msg.response);
+        ansDiv.innerHTML = renderSafeMarkdown(msg.response);
         
         copyBtn.onclick = () => {
           navigator.clipboard.writeText(ansDiv.innerText);
@@ -326,6 +390,207 @@ startPremium?.addEventListener("click", () => {
 });
 
 /* ======================
+    ADMIN ANALYTICS
+====================== */
+adminBtn?.addEventListener("click", () => {
+  adminModal?.classList.remove("hidden");
+  loadAdminAnalytics();
+  hapticFeedback('light');
+});
+
+closeAdmin?.addEventListener("click", () => {
+  adminModal?.classList.add("hidden");
+});
+
+adminModal?.addEventListener("click", (e) => {
+  if (e.target.id === "adminModal") adminModal.classList.add("hidden");
+});
+
+async function loadAdminAnalytics() {
+  if (!analyticsContent) return;
+  analyticsContent.innerHTML = '<div class="quiz-loading"><i data-lucide="loader" class="spin"></i> Loading analytics...</div>';
+  lucide.createIcons();
+
+  try {
+    const res = await fetch("/api/admin/analytics");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to load analytics");
+
+    const totals = data.totals || {};
+    analyticsContent.innerHTML = `
+      <div class="analytics-grid">
+        <div class="metric-card"><span>Total Users</span><strong>${totals.users || 0}</strong></div>
+        <div class="metric-card"><span>Free Users</span><strong>${totals.freeUsers || 0}</strong></div>
+        <div class="metric-card"><span>Premium Users</span><strong>${totals.premiumUsers || 0}</strong></div>
+        <div class="metric-card"><span>Total Chats</span><strong>${totals.chats || 0}</strong></div>
+        <div class="metric-card"><span>Chats Today</span><strong>${totals.todayChats || 0}</strong></div>
+        <div class="metric-card"><span>Last 7 Days</span><strong>${totals.weekChats || 0}</strong></div>
+      </div>
+      <div class="analytics-lists">
+        <div>
+          <h4>Recent Users</h4>
+          ${renderAnalyticsRows(data.recentUsers, user => `${escapeHtml(user.username)} <span>${escapeHtml(user.plan || "free")}</span>`)}
+        </div>
+        <div>
+          <h4>Most Active</h4>
+          ${renderAnalyticsRows(data.topUsers, user => `${escapeHtml(user.username)} <span>${user.chats || 0} chats</span>`)}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    analyticsContent.innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderAnalyticsRows(items = [], mapItem) {
+  if (!items.length) return '<div class="empty-state">No data yet</div>';
+  return `<div class="analytics-row-list">${items.map(item => `<div class="analytics-row">${mapItem(item)}</div>`).join("")}</div>`;
+}
+
+/* ======================
+    QUIZ GENERATOR
+====================== */
+quizBtn?.addEventListener("click", () => {
+  quizModal?.classList.remove("hidden");
+  quizTopic?.focus();
+  hapticFeedback('light');
+});
+
+closeQuiz?.addEventListener("click", () => {
+  quizModal?.classList.add("hidden");
+});
+
+quizModal?.addEventListener("click", (e) => {
+  if (e.target.id === "quizModal") quizModal.classList.add("hidden");
+});
+
+generateQuizBtn?.addEventListener("click", generateQuiz);
+
+quizTopic?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") generateQuiz();
+});
+
+async function generateQuiz() {
+  const topic = quizTopic.value.trim();
+  if (!topic) {
+    showNotification("Enter a topic first", "alert-circle");
+    return;
+  }
+
+  quizContent.innerHTML = '<div class="quiz-loading"><i data-lucide="loader" class="spin"></i> Building quiz...</div>';
+  generateQuizBtn.disabled = true;
+  lucide.createIcons();
+
+  try {
+    const res = await fetch("/api/quiz/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic, count: Number(quizCount.value) })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to generate quiz");
+
+    activeQuiz = data.quiz;
+    renderQuiz(activeQuiz);
+  } catch (err) {
+    quizContent.innerHTML = `<div class="empty-state">${escapeHtml(err.message)}</div>`;
+  } finally {
+    generateQuizBtn.disabled = false;
+    lucide.createIcons();
+  }
+}
+
+function renderQuiz(quiz) {
+  quizContent.innerHTML = `
+    <div class="quiz-summary">
+      <div>
+        <span class="quiz-summary-label">Topic</span>
+        <strong>${escapeHtml(quiz.topic || "Practice Quiz")}</strong>
+      </div>
+      <div>
+        <span class="quiz-summary-label">Questions</span>
+        <strong>${quiz.questions.length}</strong>
+      </div>
+      <div>
+        <span class="quiz-summary-label">Storage</span>
+        <strong>Not saved</strong>
+      </div>
+    </div>
+    <form id="quizForm" class="quiz-form">
+      ${quiz.questions.map((question, qIndex) => `
+        <fieldset class="quiz-question">
+          <legend class="quiz-question-head">
+            <span class="quiz-number">Q${qIndex + 1}</span>
+            <span class="question-text">${escapeHtml(question.question)}</span>
+          </legend>
+          <div class="quiz-options">
+          ${question.options.map((option, oIndex) => `
+            <label class="quiz-option">
+              <input type="radio" name="q${qIndex}" value="${oIndex}">
+              <span class="option-letter">${String.fromCharCode(65 + oIndex)}</span>
+              <span class="option-text">${escapeHtml(option)}</span>
+            </label>
+          `).join("")}
+          </div>
+          <div class="quiz-explanation hidden" id="explain-${qIndex}"></div>
+        </fieldset>
+      `).join("")}
+      <div class="quiz-actions">
+        <button class="modal-btn secondary" id="resetQuizBtn" type="button">Clear</button>
+        <button class="modal-btn primary-gradient" type="submit">Submit Quiz</button>
+      </div>
+      <div id="quizResult" class="quiz-result hidden"></div>
+    </form>
+  `;
+
+  document.getElementById("quizForm")?.addEventListener("submit", gradeQuiz);
+  document.getElementById("resetQuizBtn")?.addEventListener("click", () => renderQuiz(activeQuiz));
+}
+
+function gradeQuiz(e) {
+  e.preventDefault();
+  if (!activeQuiz) return;
+
+  let score = 0;
+  activeQuiz.questions.forEach((question, qIndex) => {
+    const selected = document.querySelector(`input[name="q${qIndex}"]:checked`);
+    const selectedIndex = selected ? Number(selected.value) : -1;
+    const isCorrect = selectedIndex === question.answerIndex;
+    if (isCorrect) score += 1;
+
+    document.querySelectorAll(`input[name="q${qIndex}"]`).forEach(input => {
+      const optionLabel = input.closest(".quiz-option");
+      optionLabel.classList.toggle("correct", Number(input.value) === question.answerIndex);
+      optionLabel.classList.toggle("wrong", input.checked && !isCorrect);
+      input.disabled = true;
+    });
+
+    const questionEl = document.querySelectorAll(".quiz-question")[qIndex];
+    questionEl?.classList.toggle("answered-correct", isCorrect);
+    questionEl?.classList.toggle("answered-wrong", selectedIndex !== -1 && !isCorrect);
+    questionEl?.classList.toggle("unanswered", selectedIndex === -1);
+
+    const explanation = document.getElementById(`explain-${qIndex}`);
+    if (explanation) {
+      explanation.classList.remove("hidden");
+      const answerText = question.options[question.answerIndex] || "";
+      explanation.innerHTML = `<strong>Correct answer:</strong> ${escapeHtml(answerText)}<br>${escapeHtml(question.explanation || "Review the highlighted correct answer.")}`;
+    }
+  });
+
+  const result = document.getElementById("quizResult");
+  const total = activeQuiz.questions.length;
+  const percent = Math.round((score / total) * 100);
+  result.classList.remove("hidden");
+  result.innerHTML = `
+    <span>Your Marks</span>
+    <strong>${score}/${total}</strong>
+    <em>${percent}%</em>
+  `;
+  showNotification(`Quiz submitted: ${score}/${total}`, "check-circle");
+}
+
+/* ======================
     THEME & AUTO-GROW
 ====================== */
 if (localStorage.getItem("theme") === "light") {
@@ -398,7 +663,8 @@ imageInput.addEventListener("change", (e) => {
   reader.onload = (event) => {
     imagePreview.src = event.target.result;
     imagePreviewContainer.classList.remove("hidden");
-    uploadStatus.textContent = "✓ Image selected";
+    uploadStatus.innerHTML = `<i data-lucide="check-circle"></i> ${escapeHtml(file.name)}`;
+    lucide.createIcons();
   };
   reader.readAsDataURL(file);
 });
@@ -413,20 +679,8 @@ function clearImage() {
   uploadStatus.textContent = "";
 }
 
-/* ======================
-    IMAGE UPLOAD
-====================== */
 document.querySelector('.upload-btn')?.addEventListener('click', () => hapticFeedback('light'));
 
-imageInput.addEventListener("change", () => {
-  if (imageInput.files.length > 0) {
-    uploadedImage = imageInput.files[0];
-    uploadStatus.innerHTML = `<i data-lucide="check-circle"></i> ${uploadedImage.name}`;
-    lucide.createIcons();
-  }
-});
-
-/* ======================
 /* ======================
     SOLVE
 ====================== */
@@ -480,7 +734,7 @@ solveBtn.addEventListener("click", async () => {
 
   const userBubble = document.createElement("div");
   userBubble.className = "chat-bubble user";
-  userBubble.innerHTML = `<div class="user-prompt">${prompt || "(Image)"}</div>`;
+  setUserPrompt(userBubble, prompt);
   chatHistory.appendChild(userBubble);
 
   const aiBubble = document.createElement("div");
@@ -543,6 +797,7 @@ solveBtn.addEventListener("click", async () => {
         signal: currentAbortController.signal 
     });
     const data = await res.json();
+    if (!res.ok) throw new Error(data.answer || data.error || "Failed to generate answer");
     
     if (!isCancelled) {
       if (data.chatId) currentChatId = data.chatId;
@@ -553,7 +808,7 @@ solveBtn.addEventListener("click", async () => {
     if (err.name === 'AbortError') {
       console.log('Fetch aborted');
     } else {
-      currentAnswerEl.textContent = "❌ Error connecting to Shniro.";
+      currentAnswerEl.textContent = err.message || "Error connecting to Shniro.";
       showNotification("Failed to get answer. Please try again.", "alert-circle");
     }
   } finally {
@@ -575,7 +830,8 @@ function typeWriter(text, rich = false, isImage = false, imageUrl = null) {
   let i = 0;
   const cleanText = text || "";
   const target = currentAnswerEl;
-  const typingSpeed = 12; // Adjusted for smoothness
+  const typingSpeed = 8;
+  let lastRenderTime = 0;
   
   isTyping = true;
 
@@ -585,9 +841,13 @@ function typeWriter(text, rich = false, isImage = false, imageUrl = null) {
       return;
     }
     if (i < cleanText.length) {
-      target.innerHTML = marked.parse(cleanText.substring(0, i + 1));
-      renderRichContent(target);
-      i++;
+      i += Math.max(1, Math.ceil(cleanText.length / 240));
+      const now = performance.now();
+      const shouldRender = i >= cleanText.length || cleanText[i - 1] === "\n" || now - lastRenderTime > 48;
+      if (shouldRender) {
+        target.innerHTML = renderSafeMarkdown(cleanText.substring(0, i));
+        lastRenderTime = now;
+      }
       
       // Smooth scroll only if near bottom
       const threshold = 100;
@@ -602,6 +862,8 @@ function typeWriter(text, rich = false, isImage = false, imageUrl = null) {
       typingTimeout = setTimeout(type, typingSpeed);
     } else {
       isTyping = false;
+      target.innerHTML = renderSafeMarkdown(cleanText);
+      renderRichContent(target);
       if (!currentAbortController) {
           solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Solve</span>';
           lucide.createIcons();
