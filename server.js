@@ -280,8 +280,8 @@ app.post("/solve", upload.single("image"), async (req, res) => {
     }
   } catch (e) {}
 
-  // Enforce limits for free users
-  if (userRecord && userRecord.plan === 'free') {
+  // Enforce limits for free non-admin users only.
+  if (userRecord && userRecord.plan === 'free' && !isAdminUser(userRecord)) {
     const today = new Date().setHours(0,0,0,0);
     const lastPrompt = new Date(userRecord.lastPromptDate).setHours(0,0,0,0);
     
@@ -422,5 +422,5 @@ app.get("/proxy-image", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Shniro AI running on port ${PORT}`);
+  console.log(`Xyron AI running on port ${PORT}`);
 });

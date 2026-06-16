@@ -3,467 +3,1116 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shniro | Account</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Xyron AI | Account</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
-    
-    <!-- Icons & PWA -->
+
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
-    <meta name="theme-color" content="#0a192f">
+    <meta name="theme-color" content="#0f1115">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        :root {
+            --auth-bg: #0f1115;
+            --auth-card: rgba(255, 255, 255, 0.075);
+            --auth-card-strong: rgba(255, 255, 255, 0.11);
+            --auth-border: rgba(255, 255, 255, 0.12);
+            --auth-border-strong: rgba(255, 255, 255, 0.2);
+            --auth-text: #f4f4f5;
+            --auth-muted: #a1a1aa;
+            --auth-faint: #71717a;
+            --auth-accent: #10a37f;
+            --auth-blue: #4285f4;
+            --auth-surface: #171a21;
+            --auth-field: #1b1e25;
+            --auth-danger: #ef4444;
+            --auth-success: #22c55e;
+            --auth-radius: 8px;
+            --auth-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+        }
+
+        html {
+            height: auto;
+            min-height: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        body.auth-body *,
+        body.auth-body *::before,
+        body.auth-body *::after {
+            box-sizing: border-box;
+        }
+
+        body.auth-body {
+            height: auto;
             min-height: 100vh;
-            padding: 20px;
-            background: radial-gradient(circle at top left, #0f766e, #020617);
-            font-family: 'Inter', sans-serif;
+            min-height: 100dvh;
             margin: 0;
+            padding: 24px;
+            display: grid;
+            place-items: center;
+            overflow-x: hidden;
+            overflow-y: auto;
+            color: var(--auth-text);
+            background:
+                linear-gradient(140deg, rgba(66, 133, 244, 0.1), transparent 34%),
+                linear-gradient(220deg, rgba(16, 163, 127, 0.1), transparent 32%),
+                linear-gradient(180deg, #111318 0%, #0d0f13 100%);
+            font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .auth-shell {
+            width: min(100%, 1040px);
+            min-height: min(720px, calc(100vh - 48px));
+            min-width: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(370px, 430px);
             overflow: hidden;
+            background: rgba(16, 18, 24, 0.88);
+            border: 1px solid var(--auth-border);
+            border-radius: var(--auth-radius);
+            box-shadow: var(--auth-shadow);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
         }
 
-        .auth-card {
-            width: 100%;
-            max-width: 440px;
-            padding: 40px;
-            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            z-index: 10;
-        }
-
-        /* Abstract Background Elements */
-        .auth-card::before {
-            content: '';
-            position: absolute;
-            top: -20px;
-            right: -20px;
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(135deg, #64ffda, #00c6ff);
-            filter: blur(40px);
-            opacity: 0.2;
-            z-index: -1;
-            border-radius: 50%;
-        }
-
-        .auth-header {
-            text-align: center;
-            margin-bottom: 35px;
-        }
-
-        .logo-container {
+        .auth-brand {
+            min-width: 0;
+            padding: clamp(28px, 5vw, 54px);
             display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 34px;
+            border-right: 1px solid var(--auth-border);
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
+                var(--auth-surface);
         }
 
-        .logo-icon {
-            width: 60px;
-            height: 60px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(100, 255, 218, 0.3);
-            border-radius: 18px;
+        .brand-top {
             display: flex;
             align-items: center;
-            justify-content: center;
-            color: #64ffda;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            gap: 12px;
+            color: var(--auth-text);
+            font-weight: 700;
+            letter-spacing: 0;
         }
 
-        .auth-header h1 {
-            font-size: 32px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fff, #64ffda);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
-            letter-spacing: -1px;
+        .brand-top img {
+            width: 36px;
+            height: 36px;
+            border-radius: var(--auth-radius);
+            object-fit: cover;
+            box-shadow: 0 0 0 1px var(--auth-border);
         }
 
-        .auth-header p {
-            color: rgba(255, 255, 255, 0.6);
+        .brand-copy {
+            max-width: 430px;
+        }
+
+        .brand-copy h1 {
+            margin: 0 0 16px;
+            color: var(--auth-text);
+            font-size: clamp(34px, 5vw, 54px);
+            line-height: 1.03;
+            letter-spacing: 0;
+        }
+
+        .brand-copy p {
+            margin: 0;
+            color: var(--auth-muted);
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        .brand-mini-panel {
+            width: min(100%, 430px);
+            padding: 14px;
+            display: grid;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.045);
+            border: 1px solid var(--auth-border);
+            border-radius: var(--auth-radius);
+        }
+
+        .brand-mini-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            color: var(--auth-muted);
+            font-size: 13px;
+        }
+
+        .brand-mini-row strong {
+            color: var(--auth-text);
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .brand-mini-row span {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+        }
+
+        .brand-mini-row svg {
+            width: 15px;
+            height: 15px;
+            color: var(--auth-accent);
+        }
+
+        .brand-points {
+            display: grid;
+            gap: 12px;
+            max-width: 430px;
+        }
+
+        .brand-point {
+            display: grid;
+            grid-template-columns: 34px minmax(0, 1fr);
+            gap: 12px;
+            align-items: start;
+            color: var(--auth-muted);
             font-size: 14px;
             line-height: 1.5;
         }
 
-        .auth-tabs {
+        .brand-point > svg {
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--auth-accent);
+            background: rgba(16, 163, 127, 0.1);
+            border: 1px solid rgba(16, 163, 127, 0.18);
+            border-radius: var(--auth-radius);
+        }
+
+        .auth-btn svg,
+        .back-link svg,
+        .inline-switch svg {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+        }
+
+        .brand-point strong {
+            display: block;
+            margin-bottom: 2px;
+            color: var(--auth-text);
+            font-size: 14px;
+            font-weight: 650;
+        }
+
+        .auth-panel {
+            min-width: 0;
+            padding: clamp(28px, 5vw, 48px);
             display: flex;
-            gap: 5px;
-            margin-bottom: 30px;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 5px;
-            border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            flex-direction: column;
+            justify-content: center;
+            background: rgba(13, 15, 19, 0.88);
+        }
+
+        .auth-panel-head {
+            margin-bottom: 24px;
+        }
+
+        .auth-eyebrow {
+            margin: 0 0 10px;
+            color: var(--auth-accent);
+            font-size: 12px;
+            font-weight: 750;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .auth-panel-head h2 {
+            margin: 0 0 8px;
+            color: var(--auth-text);
+            font-size: 28px;
+            line-height: 1.2;
+        }
+
+        .auth-panel-head p {
+            margin: 0;
+            color: var(--auth-muted);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .auth-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            padding: 4px;
+            margin-bottom: 16px;
+            background: rgba(255, 255, 255, 0.055);
+            border: 1px solid var(--auth-border);
+            border-radius: var(--auth-radius);
         }
 
         .auth-tab {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            background: none;
-            color: rgba(255, 255, 255, 0.5);
-            font-weight: 600;
-            font-size: 14px;
+            min-height: 42px;
+            color: var(--auth-muted);
+            background: transparent;
+            border: 0;
+            border-radius: 6px;
             cursor: pointer;
-            border-radius: 10px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 650;
+            transition: background 0.16s ease, color 0.16s ease;
         }
 
-        .auth-tab.active {
-            background: rgba(100, 255, 218, 0.1);
-            color: #64ffda;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        .auth-tab[aria-selected="true"] {
+            color: var(--auth-text);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .auth-message {
+            min-height: 42px;
+            margin-bottom: 16px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            color: var(--auth-muted);
+            background: rgba(255, 255, 255, 0.055);
+            border: 1px solid var(--auth-border);
+            border-radius: var(--auth-radius);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .auth-message[hidden] {
+            display: none;
+        }
+
+        .auth-message.error {
+            color: #fecaca;
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.28);
+        }
+
+        .auth-message.success {
+            color: #bbf7d0;
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.28);
         }
 
         .auth-form {
+            min-width: 0;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px;
+        }
+
+        .auth-form[hidden] {
+            display: none;
         }
 
         .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            display: grid;
+            gap: 7px;
         }
 
         .form-group label {
+            color: var(--auth-text);
             font-size: 13px;
-            font-weight: 600;
-            color: rgba(100, 255, 218, 0.8);
-            margin-left: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-weight: 650;
         }
 
-        .input-wrapper {
+        .input-shell {
+            min-width: 0;
+            width: 100%;
             position: relative;
             display: flex;
             align-items: center;
         }
 
-        .input-wrapper i {
+        .auth-mode-note {
+            margin: -4px 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--auth-faint);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .auth-mode-note svg {
+            width: 15px;
+            height: 15px;
+            color: var(--auth-accent);
+            flex: 0 0 auto;
+        }
+
+        .input-shell > svg {
             position: absolute;
-            left: 14px;
+            left: 13px;
             width: 18px;
             height: 18px;
-            color: rgba(255, 255, 255, 0.3);
+            color: var(--auth-faint);
             pointer-events: none;
-            transition: color 0.3s;
+            z-index: 1;
         }
 
-        .form-group input {
+        .input-shell input {
             width: 100%;
-            padding: 14px 16px 14px 44px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.03);
-            color: #fff;
+            min-width: 0;
+            min-height: 48px;
+            padding: 0 46px 0 42px;
+            color: var(--auth-text);
+            background: var(--auth-field);
+            border: 1px solid var(--auth-border);
+            border-radius: var(--auth-radius);
             outline: none;
             font-size: 15px;
-            transition: all 0.3s ease;
+            transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
         }
 
-        .form-group input:focus {
-            border-color: #64ffda;
-            background: rgba(255, 255, 255, 0.06);
-            box-shadow: 0 0 20px rgba(100, 255, 218, 0.1);
+        .input-shell input::placeholder {
+            color: var(--auth-faint);
         }
 
-        .form-group input:focus + i {
-            color: #64ffda;
+        .input-shell input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(66, 133, 244, 0.62);
+            box-shadow: 0 0 0 4px rgba(66, 133, 244, 0.1);
+        }
+
+        .input-shell input:focus + svg,
+        .input-shell:focus-within > svg {
+            color: var(--auth-blue);
+        }
+
+        .password-toggle {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            width: 34px;
+            height: 34px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--auth-faint);
+            background: transparent;
+            border: 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        .password-toggle svg {
+            width: 18px;
+            height: 18px;
+            flex: 0 0 auto;
+        }
+
+        .password-toggle:hover {
+            color: var(--auth-text);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .field-note {
+            color: var(--auth-faint);
+            font-size: 12px;
+            line-height: 1.4;
         }
 
         .auth-btn {
-            margin-top: 15px;
-            padding: 16px;
-            border: none;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #64ffda, #00c6ff);
-            color: #0a192f;
-            font-weight: 700;
-            font-size: 16px;
+            width: 100%;
+            min-height: 48px;
+            margin-top: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: #111827;
+            background: #f4f4f5;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: var(--auth-radius);
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 10px 25px rgba(0, 255, 213, 0.2);
+            font-size: 15px;
+            font-weight: 750;
+            transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
         }
 
         .auth-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(0, 255, 213, 0.4);
-        }
-
-        .auth-btn:active {
             transform: translateY(-1px);
+            box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
         }
 
-        .back-link {
+        .auth-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.64;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .auth-footer {
+            margin-top: 22px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 30px;
-            color: rgba(255, 255, 255, 0.5);
+            justify-content: space-between;
+            gap: 12px;
+            color: var(--auth-faint);
+            font-size: 13px;
+        }
+
+        .back-link,
+        .inline-switch {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--auth-muted);
+            background: transparent;
+            border: 0;
             text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 650;
         }
 
-        .back-link:hover {
-            color: #64ffda;
-            transform: translateX(-5px);
+        .back-link,
+        .inline-switch,
+        .password-toggle,
+        .auth-tab {
+            min-width: 24px;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        .back-link:hover,
+        .inline-switch:hover {
+            color: var(--auth-text);
         }
 
-        .hidden { display: none; opacity: 0; }
-
-        /* Toast Notifications */
         .toast-container {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            top: 18px;
+            right: 18px;
             z-index: 9999;
-            display: flex;
-            flex-direction: column;
+            width: min(360px, calc(100vw - 36px));
+            display: grid;
             gap: 10px;
         }
 
         .toast {
-            background: rgba(10, 25, 47, 0.9);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(100, 255, 218, 0.3);
-            color: #fff;
-            padding: 12px 24px;
-            border-radius: 10px;
+            padding: 12px 14px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            animation: slideIn 0.3s ease-out;
+            gap: 9px;
+            color: var(--auth-text);
+            background: rgba(24, 27, 35, 0.94);
+            border: 1px solid var(--auth-border);
+            border-radius: var(--auth-radius);
+            box-shadow: var(--auth-shadow);
             font-size: 14px;
-            font-weight: 500;
+            animation: toastIn 0.2s ease-out;
         }
 
-        .toast.error { border-color: #ef4444; }
-        .toast.success { border-color: #64ffda; }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        .toast.error {
+            border-color: rgba(239, 68, 68, 0.36);
         }
 
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
+        .toast.success {
+            border-color: rgba(34, 197, 94, 0.36);
+        }
+
+        .toast.is-leaving {
+            animation: toastOut 0.2s ease-in forwards;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes toastOut {
+            to {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+        }
+
+        @media (max-width: 820px) {
+            body.auth-body {
+                padding: 14px;
+                place-items: start center;
+            }
+
+            .auth-shell {
+                min-height: auto;
+                grid-template-columns: 1fr;
+                overflow: visible;
+            }
+
+            .auth-brand {
+                padding: 26px;
+                border-right: 0;
+                border-bottom: 1px solid var(--auth-border);
+            }
+
+            .brand-copy h1 {
+                font-size: 34px;
+            }
+
+            .brand-points {
+                display: none;
+            }
+
+            .brand-mini-panel {
+                display: none;
+            }
+
+            .auth-panel {
+                padding: 26px;
+            }
+        }
+
+        @media (max-width: 520px) {
+            body.auth-body {
+                display: block;
+                min-height: 100vh;
+                min-height: 100dvh;
+                padding: 0;
+                overflow-x: hidden;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .auth-shell {
+                width: 100%;
+                max-width: 100%;
+                min-height: 100vh;
+                min-height: 100dvh;
+                border: 0;
+                border-radius: 0;
+            }
+
+            .auth-brand {
+                gap: 12px;
+                padding: 18px 16px 14px;
+            }
+
+            body.auth-body[data-auth-mode="signup"] .auth-brand {
+                padding: 14px 16px;
+            }
+
+            body.auth-body[data-auth-mode="signup"] .brand-copy {
+                display: none;
+            }
+
+            .brand-top {
+                gap: 10px;
+            }
+
+            .brand-top img {
+                width: 32px;
+                height: 32px;
+            }
+
+            .brand-copy h1 {
+                margin-bottom: 8px;
+                font-size: 26px;
+            }
+
+            .brand-copy p {
+                font-size: 13px;
+                line-height: 1.45;
+            }
+
+            .auth-eyebrow {
+                margin-bottom: 6px;
+            }
+
+            .auth-panel-head h2 {
+                margin-bottom: 6px;
+                font-size: 22px;
+            }
+
+            .auth-panel-head p {
+                font-size: 13px;
+                line-height: 1.4;
+            }
+
+            .auth-panel {
+                padding: 18px 16px max(24px, env(safe-area-inset-bottom));
+                justify-content: flex-start;
+            }
+
+            .auth-panel-head {
+                margin-bottom: 14px;
+            }
+
+            .auth-tabs,
+            .auth-message {
+                margin-bottom: 10px;
+            }
+
+            .auth-mode-note {
+                margin: -2px 0 10px;
+                font-size: 11px;
+            }
+
+            .auth-tab {
+                min-height: 38px;
+            }
+
+            .auth-form {
+                gap: 10px;
+            }
+
+            .form-group {
+                gap: 5px;
+            }
+
+            .form-group label {
+                font-size: 12px;
+            }
+
+            .input-shell input {
+                min-height: 44px;
+                padding-right: 44px;
+                font-size: 16px;
+            }
+
+            .field-note {
+                font-size: 11px;
+                line-height: 1.25;
+            }
+
+            .auth-btn {
+                min-height: 44px;
+            }
+
+            .auth-footer {
+                margin-top: 18px;
+                padding-bottom: 8px;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+            }
+
+            .back-link,
+            .inline-switch {
+                min-height: 32px;
+            }
+
+            .toast-container {
+                top: 12px;
+                right: 12px;
+                width: calc(100vw - 24px);
+            }
+        }
+
+        @media (max-width: 520px) and (max-height: 860px) {
+            .brand-copy p {
+                display: none;
+            }
         }
     </style>
 </head>
 
-<body>
-    <div class="toast-container" id="toastContainer"></div>
-    <div class="glass auth-card">
-        <div class="auth-header">
-            <div class="logo-container">
-                <div class="logo-icon">
-                    <i data-lucide="zap" stroke-width="2.5"></i>
-                </div>
-            </div>
-            <h1>Shniro</h1>
-            <p id="authSubtitle">The smartest way to solve and learn.</p>
-        </div>
+<body class="auth-body">
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-        <div class="auth-tabs">
-            <button class="auth-tab active" onclick="switchTab('login')">Login</button>
-            <button class="auth-tab" onclick="switchTab('signup')">Sign Up</button>
-        </div>
+    <main class="auth-shell" aria-label="Xyron account">
+        <section class="auth-brand" aria-label="Xyron AI">
+            <div class="brand-top">
+                <img src="icon.png" alt="Xyron AI">
+                <span>Xyron AI</span>
+            </div>
 
-        <form id="loginForm" class="auth-form">
-            <div class="form-group">
-                <label for="loginEmail">Email Address</label>
-                <div class="input-wrapper">
-                    <input type="email" id="loginEmail" placeholder="you@example.com" required>
-                    <i data-lucide="mail"></i>
-                </div>
+            <div class="brand-copy">
+                <h1>Your AI study workspace.</h1>
+                <p>Sign in to keep your chats, image questions, and quiz practice together in one clean workspace.</p>
             </div>
-            <div class="form-group">
-                <label for="loginPassword">Password</label>
-                <div class="input-wrapper">
-                    <input type="password" id="loginPassword" placeholder="••••••••" required>
-                    <i data-lucide="lock"></i>
-                </div>
-            </div>
-            <button type="submit" class="auth-btn">Sign In</button>
-        </form>
 
-        <form id="signupForm" class="auth-form hidden">
-            <div class="form-group">
-                <label for="signupUsername">Username</label>
-                <div class="input-wrapper">
-                    <input type="text" id="signupUsername" placeholder="your_name" required>
-                    <i data-lucide="user"></i>
+            <div class="brand-mini-panel" aria-label="Account benefits">
+                <div class="brand-mini-row">
+                    <strong>Fast start</strong>
+                    <span><i data-lucide="timer"></i> Under a minute</span>
+                </div>
+                <div class="brand-mini-row">
+                    <strong>Private workspace</strong>
+                    <span><i data-lucide="lock-keyhole"></i> Session protected</span>
                 </div>
             </div>
-            <div class="form-group">
-                <label for="signupEmail">Email Address</label>
-                <div class="input-wrapper">
-                    <input type="email" id="signupEmail" placeholder="you@example.com" required>
-                    <i data-lucide="mail"></i>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="signupPassword">Password</label>
-                <div class="input-wrapper">
-                    <input type="password" id="signupPassword" placeholder="Minimum 6 characters" required>
-                    <i data-lucide="lock"></i>
-                </div>
-            </div>
-            <div class="form-group">
-                <label for="confirmPassword">Confirm Password</label>
-                <div class="input-wrapper">
-                    <input type="password" id="confirmPassword" placeholder="••••••••" required>
-                    <i data-lucide="shield-check"></i>
-                </div>
-            </div>
-            <button type="submit" class="auth-btn">Create Account</button>
-        </form>
 
-        <a href="/" class="back-link">
-            <i data-lucide="arrow-left"></i> Back to Solver
-        </a>
-    </div>
+            <div class="brand-points" aria-label="Highlights">
+                <div class="brand-point">
+                    <i data-lucide="message-square-text"></i>
+                    <span><strong>Saved conversations</strong>Return to recent answers without losing context.</span>
+                </div>
+                <div class="brand-point">
+                    <i data-lucide="image"></i>
+                    <span><strong>Image solving</strong>Upload diagrams, homework screenshots, or visual prompts.</span>
+                </div>
+                <div class="brand-point">
+                    <i data-lucide="clipboard-list"></i>
+                    <span><strong>Practice mode</strong>Generate topic quizzes when you want to check understanding.</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="auth-panel">
+            <div class="auth-panel-head">
+                <p class="auth-eyebrow">Account</p>
+                <h2 id="authTitle">Welcome back</h2>
+                <p id="authSubtitle">Sign in to continue where you left off.</p>
+            </div>
+
+            <div class="auth-tabs" role="tablist" aria-label="Account action">
+                <button class="auth-tab" id="loginTab" type="button" role="tab" aria-selected="true" aria-controls="loginForm" data-auth-tab="login">Log in</button>
+                <button class="auth-tab" id="signupTab" type="button" role="tab" aria-selected="false" aria-controls="signupForm" data-auth-tab="signup">Sign up</button>
+            </div>
+
+            <div class="auth-message" id="authMessage" role="status" aria-live="polite" hidden></div>
+            <div class="auth-mode-note" id="authModeNote">
+                <i data-lucide="shield-check"></i>
+                <span>Use your account to sync chats and quiz practice.</span>
+            </div>
+
+            <form id="loginForm" class="auth-form" autocomplete="on" novalidate>
+                <div class="form-group">
+                    <label for="loginEmail">Email address</label>
+                    <div class="input-shell">
+                        <input type="email" id="loginEmail" name="email" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="none" required>
+                        <i data-lucide="mail"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <div class="input-shell">
+                        <input type="password" id="loginPassword" name="password" placeholder="Enter your password" autocomplete="current-password" required>
+                        <i data-lucide="lock"></i>
+                        <button class="password-toggle" type="button" data-password-toggle="loginPassword" aria-label="Show password" aria-pressed="false">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="auth-btn" data-submit data-default-label="Sign in">
+                    <i data-lucide="log-in"></i>
+                    <span>Sign in</span>
+                </button>
+            </form>
+
+            <form id="signupForm" class="auth-form" autocomplete="on" novalidate hidden>
+                <div class="form-group">
+                    <label for="signupUsername">Username</label>
+                    <div class="input-shell">
+                        <input type="text" id="signupUsername" name="username" placeholder="Choose a username" autocomplete="username" minlength="3" maxlength="32" aria-describedby="usernameNote" required>
+                        <i data-lucide="user"></i>
+                    </div>
+                    <span class="field-note" id="usernameNote">Use at least 3 characters.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="signupEmail">Email address</label>
+                    <div class="input-shell">
+                        <input type="email" id="signupEmail" name="email" placeholder="you@example.com" autocomplete="email" inputmode="email" autocapitalize="none" required>
+                        <i data-lucide="mail"></i>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <div class="input-shell">
+                        <input type="password" id="signupPassword" name="password" placeholder="Create a password" autocomplete="new-password" minlength="6" aria-describedby="passwordNote" required>
+                        <i data-lucide="lock"></i>
+                        <button class="password-toggle" type="button" data-password-toggle="signupPassword" aria-label="Show password" aria-pressed="false">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </div>
+                    <span class="field-note" id="passwordNote">Minimum 6 characters.</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm password</label>
+                    <div class="input-shell">
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Repeat your password" autocomplete="new-password" minlength="6" required>
+                        <i data-lucide="shield-check"></i>
+                        <button class="password-toggle" type="button" data-password-toggle="confirmPassword" aria-label="Show password" aria-pressed="false">
+                            <i data-lucide="eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="auth-btn" data-submit data-default-label="Create account">
+                    <i data-lucide="user-plus"></i>
+                    <span>Create account</span>
+                </button>
+            </form>
+
+            <div class="auth-footer">
+                <a href="/" class="back-link">
+                    <i data-lucide="arrow-left"></i>
+                    <span>Back to Xyron</span>
+                </a>
+                <button class="inline-switch" type="button" id="inlineSwitch">Need an account?</button>
+            </div>
+        </section>
+    </main>
 
     <script>
-        lucide.createIcons();
+        const authTitle = document.getElementById("authTitle");
+        const authSubtitle = document.getElementById("authSubtitle");
+        const authMessage = document.getElementById("authMessage");
+        const authModeNote = document.getElementById("authModeNote");
+        const loginForm = document.getElementById("loginForm");
+        const signupForm = document.getElementById("signupForm");
+        const loginEmail = document.getElementById("loginEmail");
+        const loginPassword = document.getElementById("loginPassword");
+        const signupUsername = document.getElementById("signupUsername");
+        const signupEmail = document.getElementById("signupEmail");
+        const signupPassword = document.getElementById("signupPassword");
+        const confirmPassword = document.getElementById("confirmPassword");
+        const inlineSwitch = document.getElementById("inlineSwitch");
+        const tabs = document.querySelectorAll("[data-auth-tab]");
+        let activeTab = "login";
 
-        // Only redirect if we just logged in or if the user explicitly wants to go back
-        // We avoid auto-redirecting here to prevent loops if the cookie is missing but storage is not
+        function renderIcons() {
+            if (window.lucide) lucide.createIcons();
+        }
 
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
+        function setMessage(message, type = "info") {
+            authMessage.hidden = !message;
+            authMessage.className = `auth-message ${type === "info" ? "" : type}`.trim();
+            authMessage.textContent = message || "";
+        }
+
+        function showToast(message, type = "success") {
+            const container = document.getElementById("toastContainer");
+            const toast = document.createElement("div");
+            const icon = type === "success" ? "check-circle" : "alert-circle";
             toast.className = `toast ${type}`;
-            const icon = type === 'success' ? 'check-circle' : 'alert-circle';
-            toast.innerHTML = `<i data-lucide="${icon}"></i> <span>${message}</span>`;
+            toast.innerHTML = `<i data-lucide="${icon}"></i><span></span>`;
+            toast.querySelector("span").textContent = message;
             container.appendChild(toast);
-            lucide.createIcons();
+            renderIcons();
 
             setTimeout(() => {
-                toast.style.animation = 'slideOut 0.3s ease-in forwards';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+                toast.classList.add("is-leaving");
+                setTimeout(() => toast.remove(), 220);
+            }, 2800);
         }
 
-        function switchTab(tab) {
-            const loginForm = document.getElementById('loginForm');
-            const signupForm = document.getElementById('signupForm');
-            const subtitle = document.getElementById('authSubtitle');
-            const tabs = document.querySelectorAll('.auth-tab');
+        function setLoading(form, loading, label) {
+            const button = form.querySelector("[data-submit]");
+            if (!button) return;
 
-            if (tab === 'login') {
-                loginForm.classList.remove('hidden');
-                signupForm.classList.add('hidden');
-                subtitle.textContent = 'Welcome back! Please login to your account.';
-                tabs[0].classList.add('active');
-                tabs[1].classList.remove('active');
-            } else {
-                loginForm.classList.add('hidden');
-                signupForm.classList.remove('hidden');
-                subtitle.textContent = 'Join Shniro and unlock premium features.';
-                tabs[1].classList.add('active');
-                tabs[0].classList.remove('active');
+            if (!button.dataset.defaultHtml) {
+                button.dataset.defaultHtml = button.innerHTML;
+            }
+
+            form.setAttribute("aria-busy", String(loading));
+            button.disabled = loading;
+            button.innerHTML = loading
+                ? `<i data-lucide="loader" class="spin"></i><span>${label}</span>`
+                : button.dataset.defaultHtml;
+            renderIcons();
+        }
+
+        function switchTab(tab, focusFirst = true) {
+            activeTab = tab;
+            const isLogin = tab === "login";
+
+            loginForm.hidden = !isLogin;
+            signupForm.hidden = isLogin;
+            authTitle.textContent = isLogin ? "Welcome back" : "Create your account";
+            authSubtitle.textContent = isLogin
+                ? "Sign in to continue where you left off."
+                : "Start with a clean AI workspace for solving and learning.";
+            authModeNote.querySelector("span").textContent = isLogin
+                ? "Secure session with saved chats and quiz practice."
+                : "Create once, then keep your AI workspace synced.";
+            inlineSwitch.textContent = isLogin ? "Need an account?" : "Already have an account?";
+            inlineSwitch.setAttribute("aria-label", isLogin ? "Switch to sign up" : "Switch to login");
+            document.body.dataset.authMode = tab;
+            setMessage("");
+
+            tabs.forEach((tabButton) => {
+                const selected = tabButton.dataset.authTab === tab;
+                tabButton.setAttribute("aria-selected", String(selected));
+                tabButton.tabIndex = selected ? 0 : -1;
+            });
+
+            if (focusFirst) {
+                const firstInput = (isLogin ? loginForm : signupForm).querySelector("input");
+                firstInput?.focus();
             }
         }
-        
-        // Login Logic
-        document.getElementById('loginForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
-            const btn = e.target.querySelector('button');
-            
+
+        function parseJsonResponse(response) {
+            return response.json().catch(() => ({}));
+        }
+
+        function normalizeEmail(value) {
+            return value.trim().toLowerCase();
+        }
+
+        function validateForm(form) {
+            if (form.checkValidity()) return true;
+            form.reportValidity();
+            return false;
+        }
+
+        tabs.forEach((tabButton) => {
+            tabButton.addEventListener("click", () => switchTab(tabButton.dataset.authTab));
+        });
+
+        inlineSwitch.addEventListener("click", () => {
+            switchTab(activeTab === "login" ? "signup" : "login");
+        });
+
+        document.querySelectorAll("[data-password-toggle]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const input = document.getElementById(button.dataset.passwordToggle);
+                if (!input) return;
+
+                const show = input.type === "password";
+                input.type = show ? "text" : "password";
+                button.setAttribute("aria-pressed", String(show));
+                button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+                button.innerHTML = `<i data-lucide="${show ? "eye-off" : "eye"}"></i>`;
+                input.focus();
+                renderIcons();
+            });
+        });
+
+        confirmPassword.addEventListener("input", () => {
+            confirmPassword.setCustomValidity(
+                confirmPassword.value && confirmPassword.value !== signupPassword.value
+                    ? "Passwords do not match"
+                    : ""
+            );
+        });
+
+        signupPassword.addEventListener("input", () => {
+            confirmPassword.dispatchEvent(new Event("input"));
+        });
+
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            setMessage("");
+            if (!validateForm(loginForm)) return;
+
+            const email = normalizeEmail(loginEmail.value);
+            const password = loginPassword.value;
+            setLoading(loginForm, true, "Signing in");
+
             try {
-                btn.disabled = true;
-                btn.textContent = 'Logging in...';
-                
-                const res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const response = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email, password })
                 });
-                
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Login failed');
-                
-                localStorage.setItem('shniro_user', JSON.stringify(data.user));
-                showToast('Welcome back, ' + data.user.username + '!');
-                
+                const data = await parseJsonResponse(response);
+                if (!response.ok) throw new Error(data.error || "Login failed");
+
+                localStorage.setItem("shniro_user", JSON.stringify(data.user));
+                setMessage(`Welcome back, ${data.user.username}. Redirecting...`, "success");
+                showToast("Signed in successfully");
                 setTimeout(() => {
-                    window.location.href = '/';
-                }, 1500);
-            } catch (err) {
-                showToast(err.message, 'error');
+                    window.location.href = "/";
+                }, 650);
+            } catch (error) {
+                setMessage(error.message || "Could not sign in. Please try again.", "error");
+                showToast(error.message || "Could not sign in", "error");
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'Login';
+                setLoading(loginForm, false);
             }
-        };
-        
-        // Signup Logic
-        document.getElementById('signupForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('signupUsername').value;
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const btn = e.target.querySelector('button');
-            
-            if (password !== confirmPassword) return showToast('Passwords do not match!', 'error');
-            
+        });
+
+        signupForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            setMessage("");
+            confirmPassword.dispatchEvent(new Event("input"));
+            if (!validateForm(signupForm)) return;
+
+            const username = signupUsername.value.trim();
+            const email = normalizeEmail(signupEmail.value);
+            const password = signupPassword.value;
+
+            if (username.length < 3) {
+                signupUsername.focus();
+                setMessage("Username must be at least 3 characters.", "error");
+                return;
+            }
+
+            setLoading(signupForm, true, "Creating account");
+
             try {
-                btn.disabled = true;
-                btn.textContent = 'Creating Account...';
-                const res = await fetch('/api/auth/signup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const signupResponse = await fetch("/api/auth/signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username, email, password })
                 });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Signup failed');
-                
-                showToast('Account created! Logging you in...');
-                
-                // Automatically log in after signup
-                const loginRes = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                const signupData = await parseJsonResponse(signupResponse);
+                if (!signupResponse.ok) throw new Error(signupData.error || "Signup failed");
+
+                setLoading(signupForm, true, "Signing in");
+                const loginResponse = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email, password })
                 });
-                const loginData = await loginRes.json();
-                
-                if (loginRes.ok) {
-                    localStorage.setItem('shniro_user', JSON.stringify(loginData.user));
-                    setTimeout(() => window.location.href = '/', 1500);
-                } else {
-                    switchTab('login');
+                const loginData = await parseJsonResponse(loginResponse);
+
+                if (!loginResponse.ok) {
+                    loginEmail.value = email;
+                    switchTab("login", false);
+                    setMessage("Account created. Sign in to continue.", "success");
+                    return;
                 }
-            } catch (err) {
-                showToast(err.message, 'error');
+
+                localStorage.setItem("shniro_user", JSON.stringify(loginData.user));
+                setMessage("Account created. Redirecting...", "success");
+                showToast("Account created successfully");
+                setTimeout(() => {
+                    window.location.href = "/";
+                }, 650);
+            } catch (error) {
+                setMessage(error.message || "Could not create account. Please try again.", "error");
+                showToast(error.message || "Could not create account", "error");
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'Create Account';
+                setLoading(signupForm, false);
             }
-        };
+        });
+
+        async function checkExistingSession() {
+            try {
+                const response = await fetch("/api/auth/me");
+                const data = await parseJsonResponse(response);
+                if (response.ok && data.user) {
+                    localStorage.setItem("shniro_user", JSON.stringify(data.user));
+                    window.location.href = "/";
+                }
+            } catch (error) {
+                // Stay on auth page if the session check cannot complete.
+            }
+        }
+
+        switchTab("login", false);
+        renderIcons();
+        checkExistingSession();
     </script>
 </body>
 

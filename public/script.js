@@ -44,6 +44,8 @@ let currentAnswerEl = null; // tracks the active answer div for typing
 let hasInteracted = false; // tracks if the user has sent at least one prompt
 let currentChatId = null; // tracks the active chat session id
 let activeQuiz = null;
+let messageRevealObserver = null;
+let scrollBlurTimeout = null;
 
 /* ======================
     NOTIFICATION SYSTEM
@@ -109,8 +111,13 @@ function updateSidebarUser() {
     lucide.createIcons();
   }
 
-  if (adminBtn && currentUser?.isAdmin) {
-    adminBtn.classList.remove("hidden");
+  if (currentUser?.isAdmin) {
+    adminBtn?.classList.remove("hidden");
+    upgradeBtn?.classList.add("hidden");
+    upgradeModal?.classList.add("hidden");
+  } else {
+    adminBtn?.classList.add("hidden");
+    upgradeBtn?.classList.remove("hidden");
   }
 }
 
@@ -143,6 +150,112 @@ function setUserPrompt(bubble, value) {
   promptEl.className = "user-prompt";
   promptEl.textContent = value || "(Image)";
   bubble.appendChild(promptEl);
+}
+
+function isPageNearBottom(threshold = 220) {
+  const scrollingEl = document.scrollingElement || document.documentElement;
+  const scrollTop = Math.max(window.scrollY, document.body.scrollTop, scrollingEl.scrollTop);
+  const viewportHeight = window.innerHeight || document.body.clientHeight;
+  const scrollHeight = Math.max(document.body.scrollHeight, scrollingEl.scrollHeight);
+  return scrollTop + viewportHeight >= scrollHeight - threshold;
+}
+
+function scrollChatToBottom(behavior = "smooth") {
+  requestAnimationFrame(() => {
+    const scrollingEl = document.scrollingElement || document.documentElement;
+    const top = Math.max(document.body.scrollHeight, scrollingEl.scrollHeight);
+    chatHistory?.scrollTo({ top: chatHistory.scrollHeight, behavior });
+    document.body.scrollTo?.({ top, behavior });
+    scrollingEl.scrollTo?.({ top, behavior });
+    window.scrollTo({ top, behavior });
+  });
+}
+
+function markAnswerSoftReveal(target) {
+  if (!target) return;
+  target.classList.add("is-soft-revealing");
+  clearTimeout(target._softRevealTimer);
+  target._softRevealTimer = setTimeout(() => {
+    target.classList.remove("is-soft-revealing");
+  }, 160);
+}
+
+function setChatScrollingState() {
+  if (!hasInteracted) return;
+  document.body.classList.add("is-chat-scrolling");
+  clearTimeout(scrollBlurTimeout);
+  scrollBlurTimeout = setTimeout(() => {
+    document.body.classList.remove("is-chat-scrolling");
+  }, 180);
+}
+
+function ensureMessageRevealObserver() {
+  if (messageRevealObserver) return messageRevealObserver;
+
+  if (!("IntersectionObserver" in window)) {
+    return null;
+  }
+
+  messageRevealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add("is-visible");
+      messageRevealObserver.unobserve(entry.target);
+    });
+  }, {
+    root: null,
+    rootMargin: "0px 0px -10% 0px",
+    threshold: 0.08
+  });
+
+  return messageRevealObserver;
+}
+
+function prepareMessageReveal(messageEl) {
+  if (!messageEl) return;
+
+  messageEl.classList.add("is-reveal-ready");
+  const observer = ensureMessageRevealObserver();
+  if (observer) {
+    observer.observe(messageEl);
+  } else {
+    messageEl.classList.add("is-visible");
+  }
+}
+
+function clearFollowUpActions() {
+  document.querySelectorAll(".follow-up-actions").forEach(node => node.remove());
+}
+
+function appendFollowUpActions(aiBubble) {
+  if (!aiBubble || aiBubble.querySelector(".follow-up-actions")) return;
+
+  clearFollowUpActions();
+  const actions = document.createElement("div");
+  actions.className = "follow-up-actions";
+
+  [
+    ["Simplify", "Explain the last answer in simpler words."],
+    ["Show steps", "Break the last answer into clear steps."],
+    ["Quiz me", "Create a short quiz from the last answer."],
+    ["Examples", "Give practical examples for the last answer."]
+  ].forEach(([label, prompt]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "follow-up-chip";
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      promptInput.value = prompt;
+      autoGrow(promptInput);
+      promptInput.focus();
+      promptInput.setSelectionRange(promptInput.value.length, promptInput.value.length);
+      hapticFeedback("light");
+    });
+    actions.appendChild(button);
+  });
+
+  aiBubble.appendChild(actions);
+  prepareMessageReveal(actions);
 }
 
 // Modal Event Listeners
@@ -278,6 +391,7 @@ async function loadChat(chatId) {
         userBubble.className = "chat-bubble user";
         setUserPrompt(userBubble, msg.prompt);
         chatHistory.appendChild(userBubble);
+        prepareMessageReveal(userBubble);
 
         const aiBubble = document.createElement("div");
         aiBubble.className = "chat-bubble ai";
@@ -310,15 +424,19 @@ async function loadChat(chatId) {
         aiBubble.appendChild(ansDiv);
         aiBubble.appendChild(copyBtn);
         chatHistory.appendChild(aiBubble);
+        prepareMessageReveal(aiBubble);
         
         if (msg.isImage && msg.imageUrl) {
           renderImageDownload(msg.imageUrl, ansDiv);
         }
       });
+
+      const aiBubbles = chatHistory.querySelectorAll(".chat-bubble.ai");
+      appendFollowUpActions(aiBubbles[aiBubbles.length - 1]);
       
       lucide.createIcons();
       document.querySelectorAll(".answer-text").forEach(renderRichContent);
-      chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' });
+      scrollChatToBottom();
       
       // Close sidebar on mobile after loading
       if (window.innerWidth <= 640) {
@@ -362,20 +480,25 @@ installBtn?.addEventListener("click", async () => {
   installBtn.classList.add("hidden");
   
   if (outcome === 'accepted') {
-    showNotification("Shniro is being installed!", "check-circle");
+    showNotification("Xyron is being installed!", "check-circle");
   }
 });
 
 window.addEventListener("appinstalled", (evt) => {
-  console.log("Shniro was installed");
+  console.log("Xyron was installed");
   if (installBtn) installBtn.classList.add("hidden");
-  showNotification("Shniro installed successfully!", "check-circle");
+  showNotification("Xyron installed successfully!", "check-circle");
 });
 
 /* ======================
     UPGRADE MODAL
 ====================== */
 upgradeBtn?.addEventListener("click", () => {
+  if (currentUser?.isAdmin) {
+    upgradeModal?.classList.add("hidden");
+    showNotification("Admin accounts already have unlimited access.", "shield-check");
+    return;
+  }
   upgradeModal.classList.remove("hidden");
   hapticFeedback('light');
 });
@@ -681,6 +804,17 @@ function clearImage() {
 
 document.querySelector('.upload-btn')?.addEventListener('click', () => hapticFeedback('light'));
 
+document.querySelectorAll(".starter-chip").forEach((button) => {
+  button.addEventListener("click", () => {
+    const promptText = button.dataset.prompt || "";
+    promptInput.value = promptText;
+    autoGrow(promptInput);
+    promptInput.focus();
+    promptInput.setSelectionRange(promptInput.value.length, promptInput.value.length);
+    hapticFeedback("light");
+  });
+});
+
 /* ======================
     SOLVE
 ====================== */
@@ -702,11 +836,13 @@ function cancelCurrentGeneration() {
   }
   isTyping = false;
   
-  solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Solve</span>';
+  solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Ask</span>';
   solveBtn.disabled = false;
   lucide.createIcons();
   
   if (currentAnswerEl) {
+    currentAnswerEl.classList.remove("is-soft-revealing");
+    currentAnswerEl.closest(".chat-bubble.ai")?.classList.remove("is-streaming");
     currentAnswerEl.innerHTML += "<br><br><em>[Cancelled by user]</em>";
   }
 }
@@ -731,14 +867,16 @@ solveBtn.addEventListener("click", async () => {
 
   lastSolveTime = Date.now();
   hapticFeedback('light');
+  clearFollowUpActions();
 
   const userBubble = document.createElement("div");
   userBubble.className = "chat-bubble user";
   setUserPrompt(userBubble, prompt);
   chatHistory.appendChild(userBubble);
+  prepareMessageReveal(userBubble);
 
   const aiBubble = document.createElement("div");
-  aiBubble.className = "chat-bubble ai";
+  aiBubble.className = "chat-bubble ai is-streaming";
   
   const bubbleHeader = document.createElement("div");
   bubbleHeader.className = "bubble-header";
@@ -751,7 +889,7 @@ solveBtn.addEventListener("click", async () => {
   
   const ansDiv = document.createElement("div");
   ansDiv.className = "answer-text";
-  ansDiv.innerHTML = '<div><i data-lucide="loader" class="spin"></i> Shniro is thinking...</div>';
+  ansDiv.innerHTML = '<div><i data-lucide="loader" class="spin"></i> Xyron is thinking...</div>';
   
   copyBtn.onclick = () => {
     navigator.clipboard.writeText(ansDiv.innerText);
@@ -768,6 +906,7 @@ solveBtn.addEventListener("click", async () => {
   aiBubble.appendChild(ansDiv);
   aiBubble.appendChild(copyBtn);
   chatHistory.appendChild(aiBubble);
+  prepareMessageReveal(aiBubble);
   currentAnswerEl = ansDiv;
   lucide.createIcons();
 
@@ -775,7 +914,7 @@ solveBtn.addEventListener("click", async () => {
   if (!document.body.classList.contains("post-first")) {
     document.body.classList.add("post-first");
   }
-  chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' });
+  scrollChatToBottom();
 
   promptInput.value = "";
   autoGrow(promptInput);
@@ -808,13 +947,13 @@ solveBtn.addEventListener("click", async () => {
     if (err.name === 'AbortError') {
       console.log('Fetch aborted');
     } else {
-      currentAnswerEl.textContent = err.message || "Error connecting to Shniro.";
+      currentAnswerEl.textContent = err.message || "Error connecting to Xyron.";
       showNotification("Failed to get answer. Please try again.", "alert-circle");
     }
   } finally {
     currentAbortController = null;
     if (!isTyping && !isCancelled) {
-      solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Solve</span>';
+      solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Ask</span>';
       lucide.createIcons();
     }
     clearImage();
@@ -832,12 +971,16 @@ function typeWriter(text, rich = false, isImage = false, imageUrl = null) {
   const target = currentAnswerEl;
   const typingSpeed = 8;
   let lastRenderTime = 0;
+  const aiBubble = target?.closest(".chat-bubble.ai");
   
   isTyping = true;
+  aiBubble?.classList.add("is-streaming");
 
   function type() {
     if (isCancelled) {
       isTyping = false;
+      target?.classList.remove("is-soft-revealing");
+      aiBubble?.classList.remove("is-streaming");
       return;
     }
     if (i < cleanText.length) {
@@ -846,31 +989,33 @@ function typeWriter(text, rich = false, isImage = false, imageUrl = null) {
       const shouldRender = i >= cleanText.length || cleanText[i - 1] === "\n" || now - lastRenderTime > 48;
       if (shouldRender) {
         target.innerHTML = renderSafeMarkdown(cleanText.substring(0, i));
+        markAnswerSoftReveal(target);
         lastRenderTime = now;
       }
       
       // Smooth scroll only if near bottom
-      const threshold = 100;
-      const isNearBottom = chatHistory.scrollHeight - chatHistory.scrollTop - chatHistory.clientHeight < threshold;
+      const threshold = 220;
+      const historyIsNearBottom = chatHistory.scrollHeight - chatHistory.scrollTop - chatHistory.clientHeight < threshold;
+      const isNearBottom = historyIsNearBottom || isPageNearBottom(threshold);
       if (isNearBottom) {
-        chatHistory.scrollTo({
-          top: chatHistory.scrollHeight,
-          behavior: 'smooth'
-        });
+        scrollChatToBottom();
       }
 
       typingTimeout = setTimeout(type, typingSpeed);
     } else {
       isTyping = false;
       target.innerHTML = renderSafeMarkdown(cleanText);
+      target.classList.remove("is-soft-revealing");
+      aiBubble?.classList.remove("is-streaming");
       renderRichContent(target);
       if (!currentAbortController) {
-          solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Solve</span>';
+          solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Ask</span>';
           lucide.createIcons();
       }
       if (isImage && imageUrl) renderImageDownload(imageUrl, target);
+      appendFollowUpActions(aiBubble);
       // Final scroll check
-      chatHistory.scrollTo({ top: chatHistory.scrollHeight, behavior: 'smooth' });
+      scrollChatToBottom();
     }
   }
   type();
@@ -944,13 +1089,13 @@ function renderRichContent(targetEl) {
 ====================== */
 window.addEventListener("scroll", () => {
   if (!hasInteracted) return;
-  
-  if (window.scrollY > 50) {
-    document.body.classList.add("post-first");
-  } else {
-    document.body.classList.remove("post-first");
-  }
+
+  setChatScrollingState();
+  document.body.classList.add("post-first");
 });
+
+window.addEventListener("wheel", setChatScrollingState, { passive: true });
+window.addEventListener("touchmove", setChatScrollingState, { passive: true });
 
 promptInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
