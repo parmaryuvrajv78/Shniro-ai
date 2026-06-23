@@ -410,6 +410,10 @@ body.light .sidebar {
   .sidebar.collapsed ~ .app {
     --sidebar-offset: 0px;
   }
+
+  .sidebar.collapsed ~ footer {
+    --sidebar-offset: 0px;
+  }
 }
 
 .sidebar-backdrop {
@@ -427,10 +431,9 @@ body.light .sidebar {
 
 .app {
   width: calc(100% - var(--sidebar-offset));
-  max-width: 1080px;
   min-height: calc(100vh - var(--topbar-height) - 70px);
   margin-left: var(--sidebar-offset);
-  margin-right: auto;
+  margin-right: 0;
   padding: clamp(26px, 5vw, 54px) clamp(18px, 5vw, 74px) 20px;
   display: flex;
   flex-direction: column;
@@ -1588,6 +1591,7 @@ body:not(.light) .primary-gradient {
 footer {
   width: calc(100% - var(--sidebar-offset));
   margin-left: var(--sidebar-offset);
+  margin-right: 0;
   padding: 20px;
   color: var(--faint);
   text-align: center;
@@ -1619,7 +1623,7 @@ body.post-first .output-card {
 
 body.post-first .input-card {
   position: fixed;
-  left: calc(var(--sidebar-offset) + 50%);
+  left: calc(var(--sidebar-offset) + ((100vw - var(--sidebar-offset)) / 2));
   bottom: var(--composer-bottom);
   z-index: 820;
   width: min(calc(100vw - var(--sidebar-offset) - 44px), 780px);

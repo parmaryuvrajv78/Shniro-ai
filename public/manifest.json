@@ -1,10 +1,10 @@
 {
   "name": "Floak AI Solver",
   "short_name": "Floak",
-  "description": "Smart, simple, and student-friendly AI study assistant.",
-  "start_url": "/",
+  "description": "Free AI homework helper, image question solver, quiz generator, note summarizer, and answer checker for students.",
+  "start_url": "https://floak.online/",
   "scope": "/",
-  "id": "/",
+  "id": "https://floak.online/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "orientation": "any",
