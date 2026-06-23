@@ -1,6 +1,6 @@
-# Shniro AI Solver 🧠
+# YuVision AI Solver
 
-Shniro is a professional, student-friendly AI assistant designed for solving academic problems and generating high-quality educational images.
+YuVision is a professional, student-friendly AI assistant designed for solving academic problems and generating high-quality educational images.
 
 ## Features
 - **AI Problem Solving**: Powered by Groq (Llama 3) for lightning-fast text responses.
@@ -35,7 +35,7 @@ GROQ_API_KEY=your_groq_key
 
 ### 4. Running the App
 - **Development**: `npm start`
-- **Production**: Use a process manager like **PM2**: `pm2 start server.js --name shniro-ai`
+- **Production**: Use a process manager like **PM2**: `pm2 start server.js --name yuvision-ai`
 
 ## Project Structure
 - `/public`: Frontend assets (HTML, CSS, JS, Icons).
@@ -44,4 +44,4 @@ GROQ_API_KEY=your_groq_key
 - `server.js`: Main entry point.
 
 ---
-© 2026 Shniro AI Team
+(c) 2026 YuVision AI Team

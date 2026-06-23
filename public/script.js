@@ -84,7 +84,8 @@ async function checkAuth() {
   try {
     const res = await fetch("/api/auth/me");
     if (res.status === 401) {
-      localStorage.removeItem('shniro_user');
+      localStorage.removeItem("yuvision_user");
+      localStorage.removeItem("shniro_user");
       if (!window.location.pathname.includes('auth.html')) {
         window.location.href = '/auth.html';
       }
@@ -277,13 +278,14 @@ document.getElementById("logoutModal")?.addEventListener("click", (e) => {
 
 async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
+  localStorage.removeItem("yuvision_user");
   localStorage.removeItem("shniro_user");
   window.location.reload();
 }
 
 // Initial check: Only redirect if we are on the main app and not logged in
 const isAuthPage = window.location.pathname.includes('auth.html');
-const userSession = localStorage.getItem('shniro_user');
+const userSession = localStorage.getItem("yuvision_user") || localStorage.getItem("shniro_user");
 
 if (!userSession && !isAuthPage) {
   window.location.href = '/auth.html';
@@ -480,14 +482,14 @@ installBtn?.addEventListener("click", async () => {
   installBtn.classList.add("hidden");
   
   if (outcome === 'accepted') {
-    showNotification("Xyron is being installed!", "check-circle");
+    showNotification("YuVision is being installed!", "check-circle");
   }
 });
 
 window.addEventListener("appinstalled", (evt) => {
-  console.log("Xyron was installed");
+  console.log("YuVision was installed");
   if (installBtn) installBtn.classList.add("hidden");
-  showNotification("Xyron installed successfully!", "check-circle");
+  showNotification("YuVision installed successfully!", "check-circle");
 });
 
 /* ======================
@@ -889,7 +891,7 @@ solveBtn.addEventListener("click", async () => {
   
   const ansDiv = document.createElement("div");
   ansDiv.className = "answer-text";
-  ansDiv.innerHTML = '<div><i data-lucide="loader" class="spin"></i> Xyron is thinking...</div>';
+  ansDiv.innerHTML = '<div><i data-lucide="loader" class="spin"></i> YuVision is thinking...</div>';
   
   copyBtn.onclick = () => {
     navigator.clipboard.writeText(ansDiv.innerText);
@@ -947,7 +949,7 @@ solveBtn.addEventListener("click", async () => {
     if (err.name === 'AbortError') {
       console.log('Fetch aborted');
     } else {
-      currentAnswerEl.textContent = err.message || "Error connecting to Xyron.";
+      currentAnswerEl.textContent = err.message || "Error connecting to YuVision.";
       showNotification("Failed to get answer. Please try again.", "alert-circle");
     }
   } finally {

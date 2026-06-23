@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Xyron AI Solver</title>
+    <title>YuVision AI Solver</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
 
     <!-- Font -->
@@ -22,12 +22,12 @@
     <meta name="theme-color" content="#0f1115">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Xyron">
+    <meta name="apple-mobile-web-app-title" content="YuVision">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
     <meta name="description" content="A premium AI study assistant for questions, images, quizzes, and problem solving.">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Xyron">
+    <meta name="application-name" content="YuVision">
     <meta name="msapplication-config" content="browserconfig.xml">
     <meta name="msapplication-TileColor" content="#0f1115">
     <meta name="msapplication-TileImage" content="icon.png">
@@ -43,7 +43,7 @@
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", () => {
                 navigator.serviceWorker.register("sw.js")
-                    .then(() => console.log("Xyron PWA Ready"))
+                    .then(() => console.log("YuVision PWA Ready"))
                     .catch(err => console.log("PWA failed", err));
             });
         }
@@ -57,8 +57,8 @@
     <!-- TOP BAR -->
     <header class="top-bar glass">
         <div class="logo">
-            <img class="logo-mark" src="icon.png" alt="Xyron Logo">
-            <span>Xyron AI</span>
+            <img class="logo-mark" src="icon.png" alt="YuVision Logo">
+            <span>YuVision AI</span>
         </div>
         <div class="header-actions">
             <button id="menuBtn" class="theme-btn icon-btn" type="button" title="Menu">
@@ -124,8 +124,8 @@
 
     <!-- MAIN APP -->
     <main class="app">
-        <section class="hero-panel" aria-label="Xyron workspace">
-            <div class="hero-kicker"><span class="status-dot"></span> Xyron Studio</div>
+        <section class="hero-panel" aria-label="YuVision workspace">
+            <div class="hero-kicker"><span class="status-dot"></span> YuVision Studio</div>
             <h1 class="title">What are we solving?</h1>
             <p class="subtitle">A focused AI workspace for questions, notes, images, and practice.</p>
             <div class="session-strip" aria-label="Session state">
@@ -166,7 +166,7 @@
                     <i data-lucide="x"></i>
                 </button>
             </div>
-            <textarea id="prompt" placeholder="Ask Xyron anything..."></textarea>
+            <textarea id="prompt" placeholder="Ask YuVision anything..."></textarea>
             <div class="actions">
                 <label class="upload-btn">
                     <i data-lucide="image"></i><span> Attach</span>
@@ -225,7 +225,7 @@
         <div class="glass modal-content">
             <div class="modal-icon"><i data-lucide="log-out"></i></div>
             <h3>Sign Out?</h3>
-            <p>Are you sure you want to log out of your Xyron account?</p>
+            <p>Are you sure you want to log out of your YuVision account?</p>
             <div class="modal-actions">
                 <button id="cancelLogout" class="modal-btn secondary">Cancel</button>
                 <button id="confirmLogout" class="modal-btn primary">Logout</button>
@@ -278,7 +278,7 @@
         </div>
     </div>
 
-    <footer>Xyron can make mistakes. Check important work. (c) 2026 Xyron</footer>
+    <footer>YuVision can make mistakes. Check important work. (c) 2026 YuVision</footer>
 
     <script src="script.js"></script>
     <script>

@@ -1,4 +1,4 @@
-const CACHE_NAME = "shniro-cache-v1";
+const CACHE_NAME = "yuvision-cache-v1";
 const urlsToCache = [
   "/",
   "/index.html",

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Xyron AI | Account</title>
+    <title>YuVision AI | Account</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
@@ -731,11 +731,11 @@
 <body class="auth-body">
     <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-    <main class="auth-shell" aria-label="Xyron account">
-        <section class="auth-brand" aria-label="Xyron AI">
+    <main class="auth-shell" aria-label="YuVision account">
+        <section class="auth-brand" aria-label="YuVision AI">
             <div class="brand-top">
-                <img src="icon.png" alt="Xyron AI">
-                <span>Xyron AI</span>
+                <img src="icon.png" alt="YuVision AI">
+                <span>YuVision AI</span>
             </div>
 
             <div class="brand-copy">
@@ -864,7 +864,7 @@
             <div class="auth-footer">
                 <a href="/" class="back-link">
                     <i data-lucide="arrow-left"></i>
-                    <span>Back to Xyron</span>
+                    <span>Back to YuVision</span>
                 </a>
                 <button class="inline-switch" type="button" id="inlineSwitch">Need an account?</button>
             </div>
@@ -1027,7 +1027,8 @@
                 const data = await parseJsonResponse(response);
                 if (!response.ok) throw new Error(data.error || "Login failed");
 
-                localStorage.setItem("shniro_user", JSON.stringify(data.user));
+                localStorage.setItem("yuvision_user", JSON.stringify(data.user));
+                localStorage.removeItem("shniro_user");
                 setMessage(`Welcome back, ${data.user.username}. Redirecting...`, "success");
                 showToast("Signed in successfully");
                 setTimeout(() => {
@@ -1083,7 +1084,8 @@
                     return;
                 }
 
-                localStorage.setItem("shniro_user", JSON.stringify(loginData.user));
+                localStorage.setItem("yuvision_user", JSON.stringify(loginData.user));
+                localStorage.removeItem("shniro_user");
                 setMessage("Account created. Redirecting...", "success");
                 showToast("Account created successfully");
                 setTimeout(() => {
@@ -1102,7 +1104,8 @@
                 const response = await fetch("/api/auth/me");
                 const data = await parseJsonResponse(response);
                 if (response.ok && data.user) {
-                    localStorage.setItem("shniro_user", JSON.stringify(data.user));
+                    localStorage.setItem("yuvision_user", JSON.stringify(data.user));
+                    localStorage.removeItem("shniro_user");
                     window.location.href = "/";
                 }
             } catch (error) {

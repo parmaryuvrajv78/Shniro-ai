@@ -83,7 +83,7 @@ export async function generateTogetherImage(prompt, apiKey) {
 export async function analyzeImage(imagePath, mimetype, question, apiKey) {
     const imageBuffer = fs.readFileSync(imagePath);
     
-    const analysisPrompt = `You are Shniro, a professional AI student assistant.
+    const analysisPrompt = `You are YuVision, a professional AI student assistant.
     Analyze the provided image and address the user's request: "${question}".
     
     Rules:
@@ -115,7 +115,7 @@ export async function analyzeImage(imagePath, mimetype, question, apiKey) {
     const data = await res.json();
     if (!res.ok) {
         if (data.error?.code === 429 || data.error?.message?.toLowerCase().includes("quota")) {
-            return "Shniro's vision brain is currently busy (Limit reached). Please try again in a minute!";
+            return "YuVision's vision brain is currently busy (Limit reached). Please try again in a minute!";
         }
         console.error("Gemini Error:", JSON.stringify(data));
         throw new Error(data.error?.message || "Gemini Image Analysis failed");
@@ -177,7 +177,7 @@ export async function getChatResponse(conversation, question, systemInstruction,
     const data = await geminiRes.json();
     if (!geminiRes.ok) {
         if (data.error?.code === 429 || data.error?.message?.toLowerCase().includes("quota")) {
-            return { answer: "Shniro is currently taking a short breath (Quota limit). Please try again in 1 minute!", source: "gemini" };
+            return { answer: "YuVision is currently taking a short breath (Quota limit). Please try again in 1 minute!", source: "gemini" };
         }
         throw new Error(data.error?.message || "Gemini Fallback failed");
     }
