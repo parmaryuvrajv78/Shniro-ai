@@ -1,7 +1,7 @@
 {
-  "name": "YuVision AI Solver",
-  "short_name": "YuVision",
-  "description": "Smart, simple, and student-friendly AI solver.",
+  "name": "Floak AI Solver",
+  "short_name": "Floak",
+  "description": "Smart, simple, and student-friendly AI study assistant.",
   "start_url": "/",
   "scope": "/",
   "id": "/",

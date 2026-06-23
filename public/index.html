@@ -3,8 +3,37 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>YuVision AI Solver</title>
+    <title>Floak AI Solver | Study Assistant for Questions, Images, and Quizzes</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="Floak is an AI study assistant that helps students solve questions, understand images, generate quizzes, summarize notes, and check answers step by step.">
+    <meta name="keywords" content="Floak, Floak AI, AI solver, AI study assistant, homework helper, question solver, image question solver, quiz generator, notes summarizer">
+    <meta name="author" content="Floak">
+    <meta name="robots" content="index, follow">
+    <meta name="application-name" content="Floak">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Floak AI Solver">
+    <meta property="og:description" content="Solve questions, analyze images, generate quizzes, summarize notes, and check answers with Floak.">
+    <meta property="og:image" content="/icon.png">
+    <meta property="og:site_name" content="Floak">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Floak AI Solver">
+    <meta name="twitter:description" content="An AI study workspace for questions, images, quizzes, notes, and practice.">
+    <meta name="twitter:image" content="/icon.png">
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "Floak",
+            "applicationCategory": "EducationalApplication",
+            "operatingSystem": "Web",
+            "description": "Floak is an AI study assistant for solving questions, analyzing images, generating quizzes, summarizing notes, and checking answers.",
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+            }
+        }
+    </script>
 
     <!-- Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -22,12 +51,10 @@
     <meta name="theme-color" content="#0f1115">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="YuVision">
+    <meta name="apple-mobile-web-app-title" content="Floak">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" type="image/png" href="icon.png">
-    <meta name="description" content="A premium AI study assistant for questions, images, quizzes, and problem solving.">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="YuVision">
     <meta name="msapplication-config" content="browserconfig.xml">
     <meta name="msapplication-TileColor" content="#0f1115">
     <meta name="msapplication-TileImage" content="icon.png">
@@ -43,7 +70,7 @@
         if ("serviceWorker" in navigator) {
             window.addEventListener("load", () => {
                 navigator.serviceWorker.register("sw.js")
-                    .then(() => console.log("YuVision PWA Ready"))
+                    .then(() => console.log("Floak PWA Ready"))
                     .catch(err => console.log("PWA failed", err));
             });
         }
@@ -57,8 +84,8 @@
     <!-- TOP BAR -->
     <header class="top-bar glass">
         <div class="logo">
-            <img class="logo-mark" src="icon.png" alt="YuVision Logo">
-            <span>YuVision AI</span>
+            <img class="logo-mark" src="icon.png" alt="Floak Logo">
+            <span>Floak AI</span>
         </div>
         <div class="header-actions">
             <button id="menuBtn" class="theme-btn icon-btn" type="button" title="Menu">
@@ -124,8 +151,8 @@
 
     <!-- MAIN APP -->
     <main class="app">
-        <section class="hero-panel" aria-label="YuVision workspace">
-            <div class="hero-kicker"><span class="status-dot"></span> YuVision Studio</div>
+        <section class="hero-panel" aria-label="Floak workspace">
+            <div class="hero-kicker"><span class="status-dot"></span> Floak Studio</div>
             <h1 class="title">What are we solving?</h1>
             <p class="subtitle">A focused AI workspace for questions, notes, images, and practice.</p>
             <div class="session-strip" aria-label="Session state">
@@ -166,7 +193,7 @@
                     <i data-lucide="x"></i>
                 </button>
             </div>
-            <textarea id="prompt" placeholder="Ask YuVision anything..."></textarea>
+            <textarea id="prompt" placeholder="Ask Floak anything..."></textarea>
             <div class="actions">
                 <label class="upload-btn">
                     <i data-lucide="image"></i><span> Attach</span>
@@ -225,7 +252,7 @@
         <div class="glass modal-content">
             <div class="modal-icon"><i data-lucide="log-out"></i></div>
             <h3>Sign Out?</h3>
-            <p>Are you sure you want to log out of your YuVision account?</p>
+            <p>Are you sure you want to log out of your Floak account?</p>
             <div class="modal-actions">
                 <button id="cancelLogout" class="modal-btn secondary">Cancel</button>
                 <button id="confirmLogout" class="modal-btn primary">Logout</button>
@@ -278,7 +305,7 @@
         </div>
     </div>
 
-    <footer>YuVision can make mistakes. Check important work. (c) 2026 YuVision</footer>
+    <footer>Floak can make mistakes. Check important work. (c) 2026 Floak</footer>
 
     <script src="script.js"></script>
     <script>

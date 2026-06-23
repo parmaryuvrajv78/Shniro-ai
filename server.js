@@ -44,7 +44,7 @@ const authenticateToken = (req, res, next) => {
   if (!token) return res.status(401).json({ error: "Unauthorized" });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "yuvision_secret");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "floak_secret");
     req.user = { id: decoded.userId };
     next();
   } catch (err) {
@@ -67,7 +67,7 @@ app.get("/auth.html", (req, res) => {
 
 // MongoDB Connection Management
 let isDbConnected = false;
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/yuvision_solver";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/floak_solver";
 
 mongoose.connect(MONGODB_URI)
   .catch(err => {
@@ -150,7 +150,7 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "yuvision_secret", { expiresIn: "7d" });
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET || "floak_secret", { expiresIn: "7d" });
     res.cookie("token", token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
     res.json({ message: "Login successful", user: { id: user._id, username: user.username, email: user.email } });
   } catch (err) {
@@ -272,7 +272,7 @@ app.post("/solve", upload.single("image"), async (req, res) => {
   try {
     const token = req.cookies.token;
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || "yuvision_secret");
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || "floak_secret");
       userId = decoded.userId;
       if (isDbConnected) {
         userRecord = await User.findById(userId);
@@ -319,8 +319,8 @@ app.post("/solve", upload.single("image"), async (req, res) => {
     } else {
       const wantsDetail = ["detail", "depth", "step by step"].some(k => question.toLowerCase().includes(k));
       const systemInstruction = wantsDetail
-        ? "You are YuVision, a helpful AI tutor. Provide a detailed explanation."
-        : "You are YuVision, a student-friendly AI. Keep it brief.";
+        ? "You are Floak, a helpful AI tutor. Provide a detailed explanation."
+        : "You are Floak, a student-friendly AI. Keep it brief.";
 
       let dynamicConversation = [];
       if (chatRecord && chatRecord.messages) {
@@ -422,5 +422,5 @@ app.get("/proxy-image", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`YuVision AI running on port ${PORT}`);
+  console.log(`Floak AI running on port ${PORT}`);
 });

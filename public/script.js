@@ -84,6 +84,8 @@ async function checkAuth() {
   try {
     const res = await fetch("/api/auth/me");
     if (res.status === 401) {
+      localStorage.removeItem("floak_user");
+      localStorage.removeItem("xyron_user");
       localStorage.removeItem("yuvision_user");
       localStorage.removeItem("shniro_user");
       if (!window.location.pathname.includes('auth.html')) {
@@ -94,6 +96,10 @@ async function checkAuth() {
     const data = await res.json();
     if (res.ok && data.user) {
       currentUser = data.user;
+      localStorage.setItem("floak_user", JSON.stringify(data.user));
+      localStorage.removeItem("xyron_user");
+      localStorage.removeItem("yuvision_user");
+      localStorage.removeItem("shniro_user");
       updateSidebarUser();
     }
   } catch (err) {}
@@ -278,6 +284,8 @@ document.getElementById("logoutModal")?.addEventListener("click", (e) => {
 
 async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
+  localStorage.removeItem("floak_user");
+  localStorage.removeItem("xyron_user");
   localStorage.removeItem("yuvision_user");
   localStorage.removeItem("shniro_user");
   window.location.reload();
@@ -285,7 +293,7 @@ async function logout() {
 
 // Initial check: Only redirect if we are on the main app and not logged in
 const isAuthPage = window.location.pathname.includes('auth.html');
-const userSession = localStorage.getItem("yuvision_user") || localStorage.getItem("shniro_user");
+const userSession = localStorage.getItem("floak_user") || localStorage.getItem("xyron_user") || localStorage.getItem("yuvision_user") || localStorage.getItem("shniro_user");
 
 if (!userSession && !isAuthPage) {
   window.location.href = '/auth.html';
@@ -482,14 +490,14 @@ installBtn?.addEventListener("click", async () => {
   installBtn.classList.add("hidden");
   
   if (outcome === 'accepted') {
-    showNotification("YuVision is being installed!", "check-circle");
+    showNotification("Floak is being installed!", "check-circle");
   }
 });
 
 window.addEventListener("appinstalled", (evt) => {
-  console.log("YuVision was installed");
+  console.log("Floak was installed");
   if (installBtn) installBtn.classList.add("hidden");
-  showNotification("YuVision installed successfully!", "check-circle");
+  showNotification("Floak installed successfully!", "check-circle");
 });
 
 /* ======================
@@ -891,7 +899,7 @@ solveBtn.addEventListener("click", async () => {
   
   const ansDiv = document.createElement("div");
   ansDiv.className = "answer-text";
-  ansDiv.innerHTML = '<div><i data-lucide="loader" class="spin"></i> YuVision is thinking...</div>';
+  ansDiv.innerHTML = '<div><i data-lucide="loader" class="spin"></i> Floak is thinking...</div>';
   
   copyBtn.onclick = () => {
     navigator.clipboard.writeText(ansDiv.innerText);
@@ -949,7 +957,7 @@ solveBtn.addEventListener("click", async () => {
     if (err.name === 'AbortError') {
       console.log('Fetch aborted');
     } else {
-      currentAnswerEl.textContent = err.message || "Error connecting to YuVision.";
+      currentAnswerEl.textContent = err.message || "Error connecting to Floak.";
       showNotification("Failed to get answer. Please try again.", "alert-circle");
     }
   } finally {

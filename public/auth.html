@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>YuVision AI | Account</title>
+    <title>Floak AI | Account</title>
+    <meta name="description" content="Sign in to Floak, an AI study assistant for solving questions, analyzing images, generating quizzes, and saving study conversations.">
+    <meta name="robots" content="noindex, follow">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="style.css">
@@ -731,11 +733,11 @@
 <body class="auth-body">
     <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
-    <main class="auth-shell" aria-label="YuVision account">
-        <section class="auth-brand" aria-label="YuVision AI">
+    <main class="auth-shell" aria-label="Floak account">
+        <section class="auth-brand" aria-label="Floak AI">
             <div class="brand-top">
-                <img src="icon.png" alt="YuVision AI">
-                <span>YuVision AI</span>
+                <img src="icon.png" alt="Floak AI">
+                <span>Floak AI</span>
             </div>
 
             <div class="brand-copy">
@@ -864,7 +866,7 @@
             <div class="auth-footer">
                 <a href="/" class="back-link">
                     <i data-lucide="arrow-left"></i>
-                    <span>Back to YuVision</span>
+                    <span>Back to Floak</span>
                 </a>
                 <button class="inline-switch" type="button" id="inlineSwitch">Need an account?</button>
             </div>
@@ -1027,7 +1029,9 @@
                 const data = await parseJsonResponse(response);
                 if (!response.ok) throw new Error(data.error || "Login failed");
 
-                localStorage.setItem("yuvision_user", JSON.stringify(data.user));
+                localStorage.setItem("floak_user", JSON.stringify(data.user));
+                localStorage.removeItem("xyron_user");
+                localStorage.removeItem("yuvision_user");
                 localStorage.removeItem("shniro_user");
                 setMessage(`Welcome back, ${data.user.username}. Redirecting...`, "success");
                 showToast("Signed in successfully");
@@ -1084,7 +1088,9 @@
                     return;
                 }
 
-                localStorage.setItem("yuvision_user", JSON.stringify(loginData.user));
+                localStorage.setItem("floak_user", JSON.stringify(loginData.user));
+                localStorage.removeItem("xyron_user");
+                localStorage.removeItem("yuvision_user");
                 localStorage.removeItem("shniro_user");
                 setMessage("Account created. Redirecting...", "success");
                 showToast("Account created successfully");
@@ -1104,7 +1110,9 @@
                 const response = await fetch("/api/auth/me");
                 const data = await parseJsonResponse(response);
                 if (response.ok && data.user) {
-                    localStorage.setItem("yuvision_user", JSON.stringify(data.user));
+                    localStorage.setItem("floak_user", JSON.stringify(data.user));
+                    localStorage.removeItem("xyron_user");
+                    localStorage.removeItem("yuvision_user");
                     localStorage.removeItem("shniro_user");
                     window.location.href = "/";
                 }
