@@ -3,6 +3,26 @@ import fs from "fs";
 
 export const GROQ_MODEL = "llama-3.1-8b-instant";
 export const GEMINI_MODEL = "gemini-2.0-flash";
+export const TOGETHER_CHAT_MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free";
+
+function hasUsableKey(key) {
+    return typeof key === "string" && key.trim().length > 20 && !key.includes("your_");
+}
+
+function createProviderError(message, statusCode = 502) {
+    const err = new Error(message);
+    err.statusCode = statusCode;
+    return err;
+}
+
+function isQuotaError(data) {
+    const message = data?.error?.message?.toLowerCase() || "";
+    return data?.error?.code === 429 || message.includes("quota") || message.includes("rate limit");
+}
+
+function toOpenAiMessages(conversation, systemInstruction) {
+    return [{ role: "system", content: systemInstruction }, ...conversation];
+}
 
 /**
  * Detects if the user wants an image
@@ -130,33 +150,76 @@ export async function analyzeImage(imagePath, mimetype, question, apiKey) {
 }
 
 /**
- * Sends a text request to Groq or fallback to Gemini
+ * Sends a text request to Groq, Together, or fallback to Gemini
  */
 export async function getChatResponse(conversation, question, systemInstruction, keys) {
     // 1. Try Groq
-    try {
-        const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${keys.GROQ}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                model: GROQ_MODEL,
-                messages: [{ role: "system", content: systemInstruction }, ...conversation],
-                temperature: 0.3
-            })
-        });
+    if (hasUsableKey(keys.GROQ)) {
+        try {
+            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${keys.GROQ}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: GROQ_MODEL,
+                    messages: toOpenAiMessages(conversation, systemInstruction),
+                    temperature: 0.3
+                })
+            });
 
-        if (groqRes.ok) {
-            const data = await groqRes.json();
-            return { answer: data.choices[0].message.content, source: "groq" };
+            const data = await groqRes.json().catch(() => ({}));
+            if (groqRes.ok) {
+                return { answer: data.choices[0].message.content, source: "groq" };
+            }
+
+            if (isQuotaError(data)) {
+                console.warn("Groq quota/rate limit reached. Trying Gemini fallback.");
+            } else {
+                console.warn("Groq unavailable. Trying Gemini fallback:", data.error?.message || groqRes.statusText);
+            }
+        } catch (err) {
+            console.error("Groq Error:", err.message);
         }
-    } catch (err) {
-        console.error("Groq Error:", err.message);
     }
 
-    // 2. Fallback to Gemini
+    // 2. Try Together before Gemini so the app can keep working when Gemini quota is exhausted.
+    if (hasUsableKey(keys.TOGETHER)) {
+        try {
+            const togetherRes = await fetch("https://api.together.xyz/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${keys.TOGETHER}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: TOGETHER_CHAT_MODEL,
+                    messages: toOpenAiMessages(conversation, systemInstruction),
+                    temperature: 0.3
+                })
+            });
+
+            const data = await togetherRes.json().catch(() => ({}));
+            if (togetherRes.ok) {
+                return { answer: data.choices?.[0]?.message?.content || "AI unavailable.", source: "together" };
+            }
+
+            if (isQuotaError(data)) {
+                console.warn("Together quota/rate limit reached. Trying Gemini fallback.");
+            } else {
+                console.warn("Together unavailable. Trying Gemini fallback:", data.error?.message || togetherRes.statusText);
+            }
+        } catch (err) {
+            console.error("Together Error:", err.message);
+        }
+    }
+
+    // 3. Fallback to Gemini
+    if (!hasUsableKey(keys.GEMINI)) {
+        throw createProviderError("AI service is not configured. Please add a valid Groq, Together, or Gemini API key.", 503);
+    }
+
     const formattedContents = conversation.map(msg => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }]
@@ -176,8 +239,8 @@ export async function getChatResponse(conversation, question, systemInstruction,
 
     const data = await geminiRes.json();
     if (!geminiRes.ok) {
-        if (data.error?.code === 429 || data.error?.message?.toLowerCase().includes("quota")) {
-            return { answer: "Floak is currently taking a short breath (Quota limit). Please try again in 1 minute!", source: "gemini" };
+        if (isQuotaError(data)) {
+            throw createProviderError("All configured AI providers are temporarily exhausted. Add a valid Groq API key or wait for your provider quota to reset.", 429);
         }
         throw new Error(data.error?.message || "Gemini Fallback failed");
     }

@@ -24,6 +24,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const FREE_DAILY_PROMPT_LIMIT = 50;
 
 // Middleware
 app.use(cors());
@@ -105,6 +106,12 @@ function isAdminUser(user) {
   }
 
   return user.username?.toLowerCase() === "admin";
+}
+
+function getLocalDayStartTime(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
 }
 
 const requireAdmin = async (req, res, next) => {
@@ -245,7 +252,8 @@ app.post("/api/quiz/generate", authenticateToken, async (req, res) => {
   try {
     const quiz = await ai.generateQuiz(topic, {
       GROQ: process.env.GROQ_API_KEY,
-      GEMINI: process.env.GEMINI_API_KEY
+      GEMINI: process.env.GEMINI_API_KEY,
+      TOGETHER: process.env.TOGETHER_API_KEY
     }, count);
 
     res.json({ quiz, saved: false });
@@ -268,6 +276,7 @@ app.post("/solve", upload.single("image"), async (req, res) => {
   const chatId = req.body.chatId;
   let userId = null;
   let userRecord = null;
+  let shouldTrackFreePrompt = false;
 
   try {
     const token = req.cookies.token;
@@ -282,30 +291,33 @@ app.post("/solve", upload.single("image"), async (req, res) => {
 
   // Enforce limits for free non-admin users only.
   if (userRecord && userRecord.plan === 'free' && !isAdminUser(userRecord)) {
-    const today = new Date().setHours(0,0,0,0);
-    const lastPrompt = new Date(userRecord.lastPromptDate).setHours(0,0,0,0);
+    const today = getLocalDayStartTime();
+    const lastPrompt = getLocalDayStartTime(userRecord.lastPromptDate);
     
-    if (today > lastPrompt) {
+    if (lastPrompt !== today) {
       userRecord.promptsUsedToday = 0;
       userRecord.lastPromptDate = new Date();
     }
-    
-    if (userRecord.promptsUsedToday >= 10) {
-      return res.status(403).json({ 
-        error: "Limit Reached", 
-        answer: "You have reached your daily limit of 10 prompts on the free plan. Please upgrade to premium or try again tomorrow." 
-      });
+
+    if (!Number.isFinite(userRecord.promptsUsedToday)) {
+      userRecord.promptsUsedToday = 0;
     }
     
-    userRecord.promptsUsedToday += 1;
-    await userRecord.save().catch(e => console.error("Error saving user limits:", e));
+    if (userRecord.promptsUsedToday >= FREE_DAILY_PROMPT_LIMIT) {
+      return res.status(403).json({ 
+        error: "Limit Reached", 
+        answer: `You have reached your daily limit of ${FREE_DAILY_PROMPT_LIMIT} prompts on the free plan. Please upgrade to premium or try again tomorrow.`
+      });
+    }
+
+    shouldTrackFreePrompt = true;
   }
 
   try {
     let result;
     
     let chatRecord;
-    if (isDbConnected && userId && chatId) {
+    if (isDbConnected && userId && chatId && mongoose.Types.ObjectId.isValid(chatId)) {
       chatRecord = await Chat.findOne({ _id: chatId, userId });
     }
 
@@ -337,7 +349,8 @@ app.post("/solve", upload.single("image"), async (req, res) => {
 
       const response = await ai.getChatResponse(dynamicConversation, question, systemInstruction, {
         GROQ: process.env.GROQ_API_KEY,
-        GEMINI: process.env.GEMINI_API_KEY
+        GEMINI: process.env.GEMINI_API_KEY,
+        TOGETHER: process.env.TOGETHER_API_KEY
       });
       result = { answer: response.answer };
     }
@@ -370,10 +383,20 @@ app.post("/solve", upload.single("image"), async (req, res) => {
       result.chatId = chatRecord._id;
     }
 
+    if (shouldTrackFreePrompt && userRecord) {
+      userRecord.promptsUsedToday += 1;
+      userRecord.lastPromptDate = new Date();
+      await userRecord.save().catch(e => console.error("Error saving user limits:", e));
+    }
+
     res.json(result);
   } catch (err) {
     console.error("❌ Solve error detailed:", err);
-    res.status(500).json({ error: "Failed to generate answer", details: err.message });
+    const statusCode = Number(err.statusCode) || 500;
+    const answer = statusCode === 429
+      ? err.message
+      : "Floak could not generate an answer right now. Please try again.";
+    res.status(statusCode).json({ error: "Failed to generate answer", answer, details: err.message });
   }
 });
 

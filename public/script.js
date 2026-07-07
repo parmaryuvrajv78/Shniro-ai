@@ -306,7 +306,7 @@ if (!userSession && !isAuthPage) {
 /* ======================
     CHAT HISTORY LOGIC
 ====================== */
-async function fetchHistory() {
+async function fetchHistory({ autoLoadLatest = false } = {}) {
   if (!currentUser) return;
   try {
     const res = await fetch("/api/chats");
@@ -339,7 +339,7 @@ async function fetchHistory() {
       });
       lucide.createIcons();
       
-      if (!currentChatId && chats.length > 0 && !hasInteracted) {
+      if (autoLoadLatest && !currentChatId && chats.length > 0 && !hasInteracted) {
         loadChat(chats[0]._id);
       }
     }
@@ -366,6 +366,9 @@ confirmDeleteBtn?.addEventListener("click", async () => {
   try {
     const res = await fetch(`/api/chats/${pendingDeleteId}`, { method: "DELETE" });
     if (res.ok) {
+      if (String(currentChatId) === String(pendingDeleteId)) {
+        startNewChat({ refreshHistory: false });
+      }
       showNotification("Chat deleted successfully", "trash-2");
       fetchHistory();
     }
@@ -383,6 +386,29 @@ window.deleteChat = deleteChat;
 
 // Global variable to store loaded chats for quick access
 let loadedChats = {};
+
+function startNewChat({ refreshHistory = true } = {}) {
+  if (currentAbortController || isTyping) {
+    cancelCurrentGeneration();
+  }
+
+  promptInput.value = "";
+  autoGrow(promptInput);
+  clearImage();
+  chatHistory.innerHTML = "";
+  clearFollowUpActions();
+  hasInteracted = false;
+  currentChatId = null;
+  currentAnswerEl = null;
+  isCancelled = false;
+  document.body.classList.remove("post-first", "is-chat-scrolling");
+  solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Ask</span>';
+  solveBtn.disabled = false;
+  lucide.createIcons();
+
+  fetch("/reset", { method: "POST" }).catch(() => {});
+  if (refreshHistory) fetchHistory();
+}
 
 async function loadChat(chatId) {
   // For simplicity, we'll re-fetch or find in existing list
@@ -770,18 +796,7 @@ promptInput.addEventListener("input", () => autoGrow(promptInput));
 
 resetBtn?.addEventListener("click", async () => {
   hapticFeedback('heavy');
-  promptInput.value = "";
-  autoGrow(promptInput);
-  imageInput.value = "";
-  uploadedImage = null;
-  uploadStatus.textContent = "";
-  chatHistory.innerHTML = "";
-  hasInteracted = false;
-  currentChatId = null;
-  document.body.classList.remove("post-first");
-  await fetch("/reset", { method: "POST" }).catch(() => {});
-  clearImage();
-  fetchHistory(); // Refresh history
+  startNewChat();
 });
 
 /* ======================
@@ -958,6 +973,7 @@ solveBtn.addEventListener("click", async () => {
       console.log('Fetch aborted');
     } else {
       currentAnswerEl.textContent = err.message || "Error connecting to Floak.";
+      currentAnswerEl.closest(".chat-bubble.ai")?.classList.remove("is-streaming");
       showNotification("Failed to get answer. Please try again.", "alert-circle");
     }
   } finally {
