@@ -92,6 +92,7 @@ db.on("disconnected", () => {
 });
 
 const upload = multer({ dest: "uploads/" });
+const feedbackFile = path.join(__dirname, "data", "feedback.json");
 
 // In-memory conversation removed in favor of db-backed session tracking
 
@@ -179,6 +180,55 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
     res.json({ user: userObject });
   } catch (err) {
     res.status(401).json({ error: "Invalid session" });
+  }
+});
+
+// ======================
+// FEEDBACK ROUTES
+// ======================
+
+app.post("/api/feedback", authenticateToken, async (req, res) => {
+  const rating = Number(req.body.rating);
+  const feedback = String(req.body.feedback || "").trim();
+
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: "Rating must be between 1 and 5" });
+  }
+
+  if (!feedback) {
+    return res.status(400).json({ error: "Feedback is required" });
+  }
+
+  if (feedback.length > 1000) {
+    return res.status(400).json({ error: "Feedback must be 1000 characters or less" });
+  }
+
+  try {
+    let userInfo = { id: req.user.id };
+    if (isDbConnected) {
+      const user = await User.findById(req.user.id).select("username email");
+      if (user) {
+        userInfo = { id: user._id, username: user.username, email: user.email };
+      }
+    }
+
+    const existing = fs.existsSync(feedbackFile)
+      ? JSON.parse(fs.readFileSync(feedbackFile, "utf8") || "[]")
+      : [];
+
+    existing.push({
+      rating,
+      feedback,
+      user: userInfo,
+      createdAt: new Date().toISOString()
+    });
+
+    fs.mkdirSync(path.dirname(feedbackFile), { recursive: true });
+    fs.writeFileSync(feedbackFile, JSON.stringify(existing, null, 2));
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    console.error("Feedback save error:", err);
+    res.status(500).json({ error: "Failed to save feedback" });
   }
 });
 

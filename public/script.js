@@ -8,6 +8,7 @@ const chatHistory = document.getElementById("chatHistory");
 const imageInput = document.getElementById("imageInput");
 const uploadStatus = document.getElementById("uploadStatus");
 const promptInput = document.getElementById("prompt");
+const undoPromptBtn = document.getElementById("undoPromptBtn");
 const resetBtn = document.getElementById("resetBtn");
 const menuBtn = document.getElementById("menuBtn");
 const sidebarEl = document.querySelector(".sidebar");
@@ -36,6 +37,14 @@ const quizTopic = document.getElementById("quizTopic");
 const quizCount = document.getElementById("quizCount");
 const generateQuizBtn = document.getElementById("generateQuizBtn");
 const quizContent = document.getElementById("quizContent");
+const feedbackBtn = document.getElementById("feedbackBtn");
+const feedbackModal = document.getElementById("feedbackModal");
+const closeFeedback = document.getElementById("closeFeedback");
+const cancelFeedback = document.getElementById("cancelFeedback");
+const feedbackForm = document.getElementById("feedbackForm");
+const feedbackText = document.getElementById("feedbackText");
+const ratingValue = document.getElementById("ratingValue");
+const ratingStars = document.querySelectorAll(".rating-star");
 
 let currentUser = null;
 let uploadedImage = null;
@@ -44,7 +53,9 @@ let currentAnswerEl = null; // tracks the active answer div for typing
 let hasInteracted = false; // tracks if the user has sent at least one prompt
 let currentChatId = null; // tracks the active chat session id
 let activeQuiz = null;
+let selectedRating = 0;
 let messageRevealObserver = null;
+let previousPromptText = "";
 let scrollBlurTimeout = null;
 
 /* ======================
@@ -252,8 +263,7 @@ function appendFollowUpActions(aiBubble) {
     button.className = "follow-up-chip";
     button.textContent = label;
     button.addEventListener("click", () => {
-      promptInput.value = prompt;
-      autoGrow(promptInput);
+      setPromptValue(prompt);
       promptInput.focus();
       promptInput.setSelectionRange(promptInput.value.length, promptInput.value.length);
       hapticFeedback("light");
@@ -607,6 +617,93 @@ function renderAnalyticsRows(items = [], mapItem) {
 }
 
 /* ======================
+    FEEDBACK
+====================== */
+function updateRatingStars(rating) {
+  selectedRating = Number(rating) || 0;
+  ratingStars.forEach((button) => {
+    const buttonRating = Number(button.dataset.rating);
+    const selected = buttonRating <= selectedRating;
+    button.classList.toggle("is-selected", selected);
+    button.setAttribute("aria-checked", String(buttonRating === selectedRating));
+  });
+  if (ratingValue) {
+    ratingValue.textContent = selectedRating ? `${selectedRating}/5 selected` : "No rating selected";
+  }
+  lucide.createIcons();
+}
+
+function closeFeedbackModal() {
+  feedbackModal?.classList.add("hidden");
+}
+
+feedbackBtn?.addEventListener("click", () => {
+  feedbackModal?.classList.remove("hidden");
+  feedbackText?.focus();
+  hapticFeedback("light");
+});
+
+closeFeedback?.addEventListener("click", closeFeedbackModal);
+cancelFeedback?.addEventListener("click", closeFeedbackModal);
+
+feedbackModal?.addEventListener("click", (e) => {
+  if (e.target.id === "feedbackModal") closeFeedbackModal();
+});
+
+ratingStars.forEach((button) => {
+  button.addEventListener("click", () => {
+    updateRatingStars(button.dataset.rating);
+    hapticFeedback("light");
+  });
+});
+
+feedbackForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const feedback = feedbackText.value.trim();
+  if (!selectedRating) {
+    showNotification("Please choose a rating out of 5.", "alert-circle");
+    return;
+  }
+  if (!feedback) {
+    feedbackText.focus();
+    showNotification("Please write your feedback.", "alert-circle");
+    return;
+  }
+
+  const submitBtn = document.getElementById("submitFeedback");
+  const defaultHtml = submitBtn?.innerHTML;
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i data-lucide="loader" class="spin"></i> Sending';
+    lucide.createIcons();
+  }
+
+  try {
+    const res = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating: selectedRating, feedback })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Could not submit feedback");
+
+    feedbackForm.reset();
+    updateRatingStars(0);
+    closeFeedbackModal();
+    showNotification("Thanks for the feedback!", "check-circle");
+  } catch (err) {
+    showNotification(err.message || "Could not submit feedback", "alert-circle");
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = defaultHtml;
+      lucide.createIcons();
+    }
+  }
+});
+
+/* ======================
     QUIZ GENERATOR
 ====================== */
 quizBtn?.addEventListener("click", () => {
@@ -787,6 +884,14 @@ sidebarBackdrop?.addEventListener("click", () => {
   document.body.style.overflow = "auto";
 });
 
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 640 && sidebarEl?.classList.contains("open")) {
+    sidebarEl.classList.remove("open");
+    sidebarBackdrop?.classList.remove("visible");
+    document.body.style.overflow = "auto";
+  }
+});
+
 function autoGrow(el) {
   el.style.height = "auto";
   el.style.height = Math.min(el.scrollHeight, 380) + "px";
@@ -794,10 +899,27 @@ function autoGrow(el) {
 autoGrow(promptInput);
 promptInput.addEventListener("input", () => autoGrow(promptInput));
 
+// Auto-scroll when new chat nodes are appended so newest message is visible
+if (chatHistory) {
+  const chatObserver = new MutationObserver((mutations) => {
+    let added = false;
+    for (const m of mutations) {
+      if (m.addedNodes && m.addedNodes.length) { added = true; break; }
+    }
+    if (added) {
+      // small delay to let layout settle
+      setTimeout(() => scrollChatToBottom('smooth'), 40);
+    }
+  });
+  chatObserver.observe(chatHistory, { childList: true, subtree: false });
+}
+
 resetBtn?.addEventListener("click", async () => {
   hapticFeedback('heavy');
   startNewChat();
 });
+
+/* bottom nav handlers removed */
 
 /* ======================
     IMAGE HANDLING
@@ -827,13 +949,34 @@ function clearImage() {
   uploadStatus.textContent = "";
 }
 
+function setPromptValue(value) {
+  if (promptInput.value !== value) {
+    previousPromptText = promptInput.value;
+  }
+  promptInput.value = value;
+  autoGrow(promptInput);
+}
+
+undoPromptBtn?.addEventListener("click", () => {
+  if (!previousPromptText) {
+    showNotification("Nothing to undo", "alert-circle");
+    return;
+  }
+
+  const currentText = promptInput.value;
+  setPromptValue(previousPromptText);
+  previousPromptText = currentText;
+  promptInput.focus();
+  promptInput.setSelectionRange(promptInput.value.length, promptInput.value.length);
+  hapticFeedback("light");
+});
+
 document.querySelector('.upload-btn')?.addEventListener('click', () => hapticFeedback('light'));
 
 document.querySelectorAll(".starter-chip").forEach((button) => {
   button.addEventListener("click", () => {
     const promptText = button.dataset.prompt || "";
-    promptInput.value = promptText;
-    autoGrow(promptInput);
+    setPromptValue(promptText);
     promptInput.focus();
     promptInput.setSelectionRange(promptInput.value.length, promptInput.value.length);
     hapticFeedback("light");

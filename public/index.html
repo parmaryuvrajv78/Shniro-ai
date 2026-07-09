@@ -163,6 +163,11 @@
                     <span class="sidebar-label">Admin</span>
                 </button>
 
+                <button id="feedbackBtn" class="sidebar-btn" title="Rate Floak">
+                    <i data-lucide="star"></i>
+                    <span class="sidebar-label">Rate</span>
+                </button>
+
                 <a href="auth.html" id="accountBtn" class="sidebar-btn" title="Account Settings">
                     <i data-lucide="user"></i>
                     <span class="sidebar-label">Account</span>
@@ -223,12 +228,18 @@
                     <i data-lucide="x"></i>
                 </button>
             </div>
+            <div class="bubble-header input-header">
+                <i data-lucide="bot" class="ai-icon"></i>
+            </div>
             <textarea id="prompt" placeholder="Ask Floak anything..."></textarea>
             <div class="actions">
                 <label class="upload-btn">
                     <i data-lucide="image"></i><span> Attach</span>
                     <input type="file" id="imageInput" hidden />
                 </label>
+                <button id="undoPromptBtn" class="upload-btn" type="button" title="Undo prompt">
+                    <i data-lucide="rotate-ccw"></i><span>Undo</span>
+                </button>
                 <button id="solveBtn" class="solve-btn" type="button"><i data-lucide="sparkles"></i><span> Ask</span></button>
             </div>
             <div id="uploadStatus" class="upload-status"></div>
@@ -290,6 +301,48 @@
         </div>
     </div>
 
+    <!-- FEEDBACK MODAL -->
+    <div id="feedbackModal" class="modal-overlay hidden">
+        <div class="glass modal-content feedback-modal">
+            <div class="modal-topline">
+                <div>
+                    <h3>Rate Floak</h3>
+                    <p>Choose a rating and share what we can improve.</p>
+                </div>
+                <button id="closeFeedback" class="icon-close" type="button" title="Close">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="feedbackForm" class="feedback-form">
+                <div class="rating-stars" role="radiogroup" aria-label="Rating out of 5">
+                    <button type="button" class="rating-star" data-rating="1" role="radio" aria-checked="false" aria-label="1 out of 5">
+                        <i data-lucide="star"></i>
+                    </button>
+                    <button type="button" class="rating-star" data-rating="2" role="radio" aria-checked="false" aria-label="2 out of 5">
+                        <i data-lucide="star"></i>
+                    </button>
+                    <button type="button" class="rating-star" data-rating="3" role="radio" aria-checked="false" aria-label="3 out of 5">
+                        <i data-lucide="star"></i>
+                    </button>
+                    <button type="button" class="rating-star" data-rating="4" role="radio" aria-checked="false" aria-label="4 out of 5">
+                        <i data-lucide="star"></i>
+                    </button>
+                    <button type="button" class="rating-star" data-rating="5" role="radio" aria-checked="false" aria-label="5 out of 5">
+                        <i data-lucide="star"></i>
+                    </button>
+                </div>
+                <div id="ratingValue" class="rating-value">No rating selected</div>
+                <textarea id="feedbackText" class="feedback-textarea" maxlength="1000" placeholder="Write your feedback..." required></textarea>
+                <div class="modal-actions">
+                    <button id="cancelFeedback" class="modal-btn secondary" type="button">Cancel</button>
+                    <button id="submitFeedback" class="modal-btn primary-gradient" type="submit">
+                        <i data-lucide="send"></i> Submit
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ADMIN ANALYTICS MODAL -->
     <div id="adminModal" class="modal-overlay hidden">
         <div class="glass modal-content wide-modal">
@@ -336,6 +389,8 @@
     </div>
 
     <footer>Floak can make mistakes. Check important work. (c) 2026 Floak</footer>
+
+    <!-- bottom nav removed -->
 
     <script src="script.js"></script>
     <script>
