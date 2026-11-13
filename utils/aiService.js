@@ -1,9 +1,25 @@
 import fetch from "node-fetch";
 import fs from "fs";
 
-export const GROQ_MODEL = "llama-3.1-8b-instant";
-export const GEMINI_MODEL = "gemini-2.0-flash";
-export const TOGETHER_CHAT_MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free";
+export const GEMINI_MODEL = "gemini-3.8-flash";
+export const GEMINI_IMAGE_MODEL = "gemini-3.1-flash-image";
+// Gemini can take more than 15 seconds on cold starts or longer answers.
+const PROVIDER_TIMEOUT_MS = 60000;
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = PROVIDER_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } catch (error) {
+        if (error.name === "AbortError") {
+            throw new Error(`Gemini request timed out after ${timeoutMs / 1000} seconds`);
+        }
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
 
 function hasUsableKey(key) {
     return typeof key === "string" && key.trim().length > 20 && !key.includes("your_");
@@ -20,10 +36,6 @@ function isQuotaError(data) {
     return data?.error?.code === 429 || message.includes("quota") || message.includes("rate limit");
 }
 
-function toOpenAiMessages(conversation, systemInstruction) {
-    return [{ role: "system", content: systemInstruction }, ...conversation];
-}
-
 /**
  * Detects if the user wants an image
  */
@@ -33,68 +45,43 @@ export function isImageRequest(question) {
     return /generate.*image|create.*image|draw|make.*image|show.*image|paint/i.test(lower);
 }
 
-/**
- * Refines a user prompt into a high-quality image prompt using Gemini
- */
-export async function getRefinedImagePrompt(question, apiKey) {
-    const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+/** Generates an image with Gemini's image model. */
+export async function generateGeminiImage(prompt, apiKey) {
+    if (!hasUsableKey(apiKey)) {
+        throw createProviderError("AI service is not configured. Add a valid GEMINI_API_KEY.", 503);
+    }
+
+    const res = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1/models/${GEMINI_IMAGE_MODEL}:generateContent`,
         {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey
+            },
             body: JSON.stringify({
-                contents: [{
-                    role: "user",
-                    parts: [{ text: `The user wants to generate an image: "${question}". Create a highly detailed, 1-sentence prompt for an image generator. IMPORTANT: Only output the plain text prompt string, NO JSON, NO markdown. Just the prompt text.` }]
-                }]
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { responseModalities: ["TEXT", "IMAGE"] }
             })
-        }
+        },
+        60000
     );
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Gemini Refiner failed");
-
-    let prompt = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || question;
-    
-    // Clean JSON or markdown if present
-    let clean = prompt.replace(/^```json\s*|```\s*$/g, "").trim();
-    if (clean.startsWith("{")) {
-        try {
-            const parsed = JSON.parse(clean);
-            prompt = parsed.prompt || parsed.action_input?.prompt || parsed.action_input || prompt;
-        } catch (e) { /* ignore */ }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const message = data.error?.message || "Gemini image generation failed.";
+        if (isQuotaError(data)) throw createProviderError("Gemini image generation quota is temporarily exhausted. Try again later.", 429);
+        throw createProviderError(message, res.status >= 500 ? 502 : res.status);
     }
-    return prompt;
-}
 
-/**
- * Generates an image using Together AI
- */
-export async function generateTogetherImage(prompt, apiKey) {
-    const res = await fetch("https://api.together.xyz/v1/images/generations", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            model: "black-forest-labs/FLUX.1-schnell-Free",
-            prompt: prompt,
-            steps: 4,
-            n: 1,
-            response_format: "b64_json"
-        })
-    });
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const imagePart = parts.find(part => part.inlineData?.data || part.inline_data?.data);
+    const imageData = imagePart?.inlineData || imagePart?.inline_data;
+    if (!imageData?.data) throw createProviderError("Gemini did not return an image. Try a more specific image prompt.", 502);
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || "Together AI Image Generation failed");
-
-    if (data.data && data.data[0] && data.data[0].b64_json) {
-        return `data:image/png;base64,${data.data[0].b64_json}`;
-    } else if (data.data && data.data[0] && data.data[0].url) {
-        return data.data[0].url;
-    }
-    throw new Error("No image data returned from Together AI");
+    const mimeType = imageData.mimeType || imageData.mime_type || "image/png";
+    const answer = parts.map(part => part.text).filter(Boolean).join("\n\n") || "Generated image";
+    return { answer, imageUrl: `data:${mimeType};base64,${imageData.data}`, isImage: true };
 }
 
 /**
@@ -115,11 +102,11 @@ export async function analyzeImage(imagePath, mimetype, question, apiKey) {
     
     Be accurate, encouraging, and academic.`;
 
-    const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    const res = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
         {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
             body: JSON.stringify({
                 contents: [{
                     role: "user",
@@ -149,75 +136,10 @@ export async function analyzeImage(imagePath, mimetype, question, apiKey) {
     return candidate.content?.parts?.map(p => p.text).join("\n\n") || "No text could be extracted from this image.";
 }
 
-/**
- * Sends a text request to Groq, Together, or fallback to Gemini
- */
-export async function getChatResponse(conversation, question, systemInstruction, keys) {
-    // 1. Try Groq
-    if (hasUsableKey(keys.GROQ)) {
-        try {
-            const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${keys.GROQ}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    model: GROQ_MODEL,
-                    messages: toOpenAiMessages(conversation, systemInstruction),
-                    temperature: 0.3
-                })
-            });
-
-            const data = await groqRes.json().catch(() => ({}));
-            if (groqRes.ok) {
-                return { answer: data.choices[0].message.content, source: "groq" };
-            }
-
-            if (isQuotaError(data)) {
-                console.warn("Groq quota/rate limit reached. Trying Gemini fallback.");
-            } else {
-                console.warn("Groq unavailable. Trying Gemini fallback:", data.error?.message || groqRes.statusText);
-            }
-        } catch (err) {
-            console.error("Groq Error:", err.message);
-        }
-    }
-
-    // 2. Try Together before Gemini so the app can keep working when Gemini quota is exhausted.
-    if (hasUsableKey(keys.TOGETHER)) {
-        try {
-            const togetherRes = await fetch("https://api.together.xyz/v1/chat/completions", {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${keys.TOGETHER}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    model: TOGETHER_CHAT_MODEL,
-                    messages: toOpenAiMessages(conversation, systemInstruction),
-                    temperature: 0.3
-                })
-            });
-
-            const data = await togetherRes.json().catch(() => ({}));
-            if (togetherRes.ok) {
-                return { answer: data.choices?.[0]?.message?.content || "AI unavailable.", source: "together" };
-            }
-
-            if (isQuotaError(data)) {
-                console.warn("Together quota/rate limit reached. Trying Gemini fallback.");
-            } else {
-                console.warn("Together unavailable. Trying Gemini fallback:", data.error?.message || togetherRes.statusText);
-            }
-        } catch (err) {
-            console.error("Together Error:", err.message);
-        }
-    }
-
-    // 3. Fallback to Gemini
-    if (!hasUsableKey(keys.GEMINI)) {
-        throw createProviderError("AI service is not configured. Please add a valid Groq, Together, or Gemini API key.", 503);
+/** Sends a text request directly to Gemini. */
+export async function getChatResponse(conversation, systemInstruction, apiKey) {
+    if (!hasUsableKey(apiKey)) {
+        throw createProviderError("AI service is not configured. Add a valid GEMINI_API_KEY.", 503);
     }
 
     const formattedContents = conversation.map(msg => ({
@@ -225,11 +147,11 @@ export async function getChatResponse(conversation, question, systemInstruction,
         parts: [{ text: msg.content }]
     }));
 
-    const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${keys.GEMINI}`,
+    const geminiRes = await fetchWithTimeout(
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
         {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
             body: JSON.stringify({
                 system_instruction: { parts: [{ text: systemInstruction }] },
                 contents: formattedContents
@@ -239,14 +161,12 @@ export async function getChatResponse(conversation, question, systemInstruction,
 
     const data = await geminiRes.json();
     if (!geminiRes.ok) {
-        if (isQuotaError(data)) {
-            throw createProviderError("All configured AI providers are temporarily exhausted. Add a valid Groq API key or wait for your provider quota to reset.", 429);
-        }
-        throw new Error(data.error?.message || "Gemini Fallback failed");
+        if (isQuotaError(data)) throw createProviderError("Gemini quota or rate limit reached. Try again later.", 429);
+        throw createProviderError(data.error?.message || "Gemini request failed.", geminiRes.status >= 500 ? 502 : geminiRes.status);
     }
 
     return { 
-        answer: data?.candidates?.[0]?.content?.parts?.[0]?.text || "AI unavailable.",
+        answer: data?.candidates?.[0]?.content?.parts?.map(part => part.text).filter(Boolean).join("\n\n") || "Gemini returned no text response.",
         source: "gemini"
     };
 }
@@ -288,7 +208,7 @@ function normalizeQuiz(rawQuiz, topic) {
 /**
  * Generates a multiple-choice quiz without storing it in the database.
  */
-export async function generateQuiz(topic, keys, count = 5) {
+export async function generateQuiz(topic, apiKey, count = 5) {
     const safeCount = Math.min(Math.max(Number(count) || 5, 3), 10);
     const systemInstruction = "You create student-friendly multiple-choice quizzes. Return only valid JSON.";
     const userPrompt = `Create a ${safeCount}-question quiz for the topic "${topic}".
@@ -308,9 +228,8 @@ Rules: exactly 4 options per question, answerIndex must be 0-3, no markdown.`;
 
     const response = await getChatResponse(
         [{ role: "user", content: userPrompt }],
-        userPrompt,
         systemInstruction,
-        keys
+        apiKey
     );
 
     return normalizeQuiz(extractJson(response.answer), topic);

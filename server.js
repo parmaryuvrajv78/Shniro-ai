@@ -26,6 +26,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const FREE_DAILY_PROMPT_LIMIT = 50;
 
+function safeErrorMessage(error) {
+  return String(error?.message || error || "Unknown error")
+    .replace(/([?&]key=)[^&\s]+/gi, "$1[redacted]")
+    .replace(/AIza[0-9A-Za-z_-]{20,}/g, "[redacted]");
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -300,16 +306,12 @@ app.post("/api/quiz/generate", authenticateToken, async (req, res) => {
   if (!topic) return res.status(400).json({ error: "Topic is required" });
 
   try {
-    const quiz = await ai.generateQuiz(topic, {
-      GROQ: process.env.GROQ_API_KEY,
-      GEMINI: process.env.GEMINI_API_KEY,
-      TOGETHER: process.env.TOGETHER_API_KEY
-    }, count);
+    const quiz = await ai.generateQuiz(topic, process.env.GEMINI_API_KEY, count);
 
     res.json({ quiz, saved: false });
   } catch (err) {
-    console.error("Quiz generation error:", err);
-    res.status(500).json({ error: "Failed to generate quiz", details: err.message });
+    console.error("Quiz generation error:", safeErrorMessage(err));
+    res.status(500).json({ error: "Failed to generate quiz" });
   }
 });
 
@@ -372,8 +374,7 @@ app.post("/solve", upload.single("image"), async (req, res) => {
     }
 
     if (ai.isImageRequest(question) && !req.file) {
-      const imageUrl = await ai.generateTogetherImage(question, process.env.TOGETHER_API_KEY);
-      result = { answer: `**Designed for you:**\n\n*Prompt: ${question}*`, imageUrl, isImage: true };
+      result = await ai.generateGeminiImage(question, process.env.GEMINI_API_KEY);
     } else if (req.file) {
       const answer = await ai.analyzeImage(req.file.path, req.file.mimetype, question, process.env.GEMINI_API_KEY);
       fs.unlinkSync(req.file.path);
@@ -397,11 +398,7 @@ app.post("/solve", upload.single("image"), async (req, res) => {
       
       dynamicConversation.push({ role: "user", content: question });
 
-      const response = await ai.getChatResponse(dynamicConversation, question, systemInstruction, {
-        GROQ: process.env.GROQ_API_KEY,
-        GEMINI: process.env.GEMINI_API_KEY,
-        TOGETHER: process.env.TOGETHER_API_KEY
-      });
+      const response = await ai.getChatResponse(dynamicConversation, systemInstruction, process.env.GEMINI_API_KEY);
       result = { answer: response.answer };
     }
 
@@ -441,12 +438,12 @@ app.post("/solve", upload.single("image"), async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error("❌ Solve error detailed:", err);
     const statusCode = Number(err.statusCode) || 500;
     const answer = statusCode === 429
-      ? err.message
+      ? safeErrorMessage(err)
       : "Floak could not generate an answer right now. Please try again.";
-    res.status(statusCode).json({ error: "Failed to generate answer", answer, details: err.message });
+    console.error("Solve provider error:", safeErrorMessage(err));
+    res.status(statusCode).json({ error: "Failed to generate answer", answer });
   }
 });
 
