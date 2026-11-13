@@ -78,7 +78,7 @@
 
     <!-- PWA & Mobile Optimization -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f1115">
+    <meta name="theme-color" content="#F8FAFC">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Floak">
@@ -112,41 +112,36 @@
 <body>
 
     <!-- TOP BAR -->
-    <header class="top-bar glass">
-        <div class="logo">
-            <img class="logo-mark" src="icon.png" alt="Floak Logo">
-            <span>Floak AI</span>
-        </div>
+    <header class="top-bar">
         <div class="header-actions">
-            <button id="menuBtn" class="theme-btn icon-btn" type="button" title="Menu">
+            <button id="menuBtn" class="theme-btn icon-btn menu-toggle" type="button" title="Toggle sidebar" aria-label="Toggle sidebar">
                 <i data-lucide="menu"></i>
             </button>
+            <button id="themeToggle" class="theme-select theme-icon-btn" type="button" aria-label="Color theme: Light" title="Color theme: Light">
+                <i data-lucide="sun"></i>
+            </button>
+            <a href="auth.html" id="topProfile" class="top-profile" aria-label="User profile" title="User profile"><i data-lucide="user-round"></i></a>
         </div>
     </header>
 
     <!-- SIDEBAR -->
-    <aside class="sidebar glass" aria-label="App sidebar">
+    <aside class="sidebar glass collapsed" aria-label="App sidebar">
         <nav class="sidebar-nav">
+            <div class="sidebar-brand"><img class="logo-mark" src="icon.png" alt=""><span>Floak</span></div>
             <div class="nav-top">
                 <button id="resetBtn" class="sidebar-btn" title="New Chat">
-                    <i data-lucide="plus-square"></i>
-                    <span class="sidebar-label">New</span>
+                    <i data-lucide="square-pen"></i>
+                    <span class="sidebar-label">New chat</span>
                 </button>
-
-                <button id="themeToggle" class="sidebar-btn" title="Toggle Theme">
-                    <i data-lucide="moon"></i>
-                    <span class="sidebar-label">Mode</span>
-                </button>
-
-                <button id="quizBtn" class="sidebar-btn" title="Quiz Generator">
-                    <i data-lucide="clipboard-list"></i>
-                    <span class="sidebar-label">Quiz</span>
+                <button id="expandSearch" class="sidebar-btn rail-search" title="Chat history" aria-label="Chat history">
+                    <i data-lucide="history"></i><span class="sidebar-label">History</span>
                 </button>
             </div>
 
             <!-- HISTORY SECTION -->
             <div class="nav-history" id="navHistory">
-                <div class="history-label">Recent Chats</div>
+                <div class="history-heading"><div class="history-label">Recent chats</div><button id="viewAllChats" class="text-action" type="button">View all</button></div>
+                <label class="history-search"><i data-lucide="search"></i><input id="chatSearch" type="search" placeholder="Search conversations" aria-label="Search conversations"></label>
                 <div id="historyList" class="history-list">
                     <!-- History items will be injected here -->
                 </div>
@@ -156,16 +151,6 @@
                 <button id="upgradeBtn" class="sidebar-btn upgrade-btn hidden" title="Upgrade Plan">
                     <i data-lucide="zap"></i>
                     <span class="sidebar-label">Upgrade</span>
-                </button>
-
-                <button id="adminBtn" class="sidebar-btn hidden" title="Admin Analytics">
-                    <i data-lucide="bar-chart-3"></i>
-                    <span class="sidebar-label">Admin</span>
-                </button>
-
-                <button id="feedbackBtn" class="sidebar-btn" title="Rate Floak">
-                    <i data-lucide="star"></i>
-                    <span class="sidebar-label">Rate</span>
                 </button>
 
                 <a href="auth.html" id="accountBtn" class="sidebar-btn" title="Account Settings">
@@ -182,72 +167,38 @@
     </aside>
 
     <!-- SIDEBAR BACKDROP (mobile) -->
-    <div id="sidebarBackdrop" class="sidebar-backdrop hidden" aria-hidden="true"></div>
+    <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
 
     <!-- MAIN APP -->
     <main class="app">
-        <section class="hero-panel" aria-label="Floak workspace">
-            <div class="hero-kicker"><span class="status-dot"></span> Floak AI Study Assistant</div>
-            <h1 class="title">Floak AI Solver</h1>
-            <p class="subtitle">Free AI homework help for questions, notes, image problems, quizzes, and practice.</p>
-            <div class="session-strip" aria-label="Session state">
-                <span><i data-lucide="sparkles"></i> Ready</span>
-                <span><i data-lucide="book-open-check"></i> Study</span>
-                <span><i data-lucide="shield-check"></i> Check work</span>
-            </div>
-
-            <section class="prompt-starters" aria-label="Prompt starters">
-                <button class="starter-chip" type="button" data-prompt="Explain this topic step by step: ">
-                    <i data-lucide="list-tree"></i>
-                    <span>Explain steps</span>
-                </button>
-                <button class="starter-chip" type="button" data-prompt="Create a 5-question quiz on ">
-                    <i data-lucide="clipboard-list"></i>
-                    <span>Make quiz</span>
-                </button>
-                <button class="starter-chip" type="button" data-prompt="Summarize these notes in simple points: ">
-                    <i data-lucide="file-text"></i>
-                    <span>Summarize</span>
-                </button>
-                <button class="starter-chip" type="button" data-prompt="Check my answer and show corrections: ">
-                    <i data-lucide="check-check"></i>
-                    <span>Check answer</span>
-                </button>
-            </section>
-        </section>
+        <section class="hero-panel" aria-label="Floak"><img class="hero-logo" src="icon.png" alt=""><h1 class="title">Floak</h1></section>
 
         <!-- INPUT -->
-        <section class="glass input-card">
-            <div class="composer-head">
-                <span><i data-lucide="message-circle"></i> Prompt</span>
-                <span class="composer-state">Live</span>
-            </div>
+        <section class="input-card">
             <div id="imagePreviewContainer" class="image-preview-container hidden">
                 <img id="imagePreview" src="" alt="Preview">
                 <button id="removeImageBtn" class="remove-image-btn" title="Remove image">
                     <i data-lucide="x"></i>
                 </button>
             </div>
-            <div class="bubble-header input-header">
-                <i data-lucide="bot" class="ai-icon"></i>
-            </div>
             <textarea id="prompt" placeholder="Ask Floak anything..."></textarea>
             <div class="actions">
-                <label class="upload-btn">
-                    <i data-lucide="image"></i><span> Attach</span>
-                    <input type="file" id="imageInput" hidden />
+                <label class="upload-btn" title="Attach a file">
+                    <i data-lucide="paperclip"></i><span> Attach</span>
+                    <input type="file" id="attachmentInput" accept="image/*" hidden />
                 </label>
-                <button id="undoPromptBtn" class="upload-btn" type="button" title="Undo prompt">
-                    <i data-lucide="rotate-ccw"></i><span>Undo</span>
-                </button>
-                <button id="solveBtn" class="solve-btn" type="button"><i data-lucide="sparkles"></i><span> Ask</span></button>
+                <label class="upload-btn image-upload-btn" title="Upload an image">
+                    <i data-lucide="image-plus"></i><span> Image</span>
+                    <input type="file" id="imageInput" accept="image/*" hidden />
+                </label>
+            <button id="solveBtn" class="solve-btn" type="button" aria-label="Send message" title="Send message"><i data-lucide="arrow-up"></i></button>
             </div>
             <div id="uploadStatus" class="upload-status"></div>
         </section>
 
         <!-- OUTPUT -->
         <section id="output" class="glass output-card">
-            <div class="output-header"><i data-lucide="bot"></i> Conversation</div>
+            <div class="output-header" aria-hidden="true"></div>
             <div id="outputContent">
                 <div id="chatHistory" class="chat-history"></div>
             </div>

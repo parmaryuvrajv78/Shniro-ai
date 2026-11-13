@@ -6,6 +6,10 @@ const solveBtn = document.getElementById("solveBtn");
 const outputContent = document.getElementById("outputContent");
 const chatHistory = document.getElementById("chatHistory");
 const imageInput = document.getElementById("imageInput");
+const attachmentInput = document.getElementById("attachmentInput");
+const chatSearch = document.getElementById("chatSearch");
+const viewAllChats = document.getElementById("viewAllChats");
+const expandSearch = document.getElementById("expandSearch");
 const uploadStatus = document.getElementById("uploadStatus");
 const promptInput = document.getElementById("prompt");
 const undoPromptBtn = document.getElementById("undoPromptBtn");
@@ -14,6 +18,7 @@ const menuBtn = document.getElementById("menuBtn");
 const sidebarEl = document.querySelector(".sidebar");
 const sidebarBackdrop = document.getElementById("sidebarBackdrop");
 const accountBtn = document.getElementById("accountBtn");
+const topProfile = document.getElementById("topProfile");
 const historyList = document.getElementById("historyList");
 const imagePreviewContainer = document.getElementById("imagePreviewContainer");
 const imagePreview = document.getElementById("imagePreview");
@@ -127,6 +132,15 @@ function updateSidebarUser() {
       hapticFeedback('light');
     };
     lucide.createIcons();
+  }
+  if (currentUser && topProfile) {
+    topProfile.title = currentUser.username;
+    topProfile.setAttribute("aria-label", `User profile: ${currentUser.username}`);
+    topProfile.href = "#";
+    topProfile.onclick = (event) => {
+      event.preventDefault();
+      accountBtn?.click();
+    };
   }
 
   if (currentUser?.isAdmin) {
@@ -347,6 +361,7 @@ async function fetchHistory({ autoLoadLatest = false } = {}) {
         item.appendChild(deleteBtn);
         historyList.appendChild(item);
       });
+      filterChatHistory();
       lucide.createIcons();
       
       if (autoLoadLatest && !currentChatId && chats.length > 0 && !hasInteracted) {
@@ -397,6 +412,26 @@ window.deleteChat = deleteChat;
 // Global variable to store loaded chats for quick access
 let loadedChats = {};
 
+function filterChatHistory() {
+  if (!historyList) return;
+  const query = (chatSearch?.value || "").trim().toLowerCase();
+  historyList.querySelectorAll(".history-item").forEach(item => {
+    item.hidden = !item.textContent.toLowerCase().includes(query);
+  });
+}
+chatSearch?.addEventListener("input", filterChatHistory);
+viewAllChats?.addEventListener("click", () => {
+  const expanded = historyList?.classList.toggle("show-all");
+  viewAllChats.textContent = expanded ? "Show recent" : "View all";
+});
+expandSearch?.addEventListener("click", () => {
+  sidebarEl?.classList.remove("collapsed");
+  chatSearch?.focus();
+});
+document.querySelector(".sidebar-brand")?.addEventListener("click", () => {
+  if (window.innerWidth > 640) sidebarEl?.classList.toggle("collapsed");
+});
+
 function startNewChat({ refreshHistory = true } = {}) {
   if (currentAbortController || isTyping) {
     cancelCurrentGeneration();
@@ -412,7 +447,7 @@ function startNewChat({ refreshHistory = true } = {}) {
   currentAnswerEl = null;
   isCancelled = false;
   document.body.classList.remove("post-first", "is-chat-scrolling");
-  solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Ask</span>';
+  solveBtn.innerHTML = '<i data-lucide="arrow-up"></i>';
   solveBtn.disabled = false;
   lucide.createIcons();
 
@@ -849,18 +884,28 @@ function gradeQuiz(e) {
 /* ======================
     THEME & AUTO-GROW
 ====================== */
-if (localStorage.getItem("theme") === "light") {
-  document.body.classList.add("light");
-  themeToggle.innerHTML = '<i data-lucide="sun"></i><span class="sidebar-label">Mode</span>';
-} else {
-  themeToggle.innerHTML = '<i data-lucide="moon"></i><span class="sidebar-label">Mode</span>';
+const savedTheme = localStorage.getItem("theme") || "light";
+function applyTheme(theme) {
+  const resolved = theme === "system" ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : theme;
+  document.body.classList.toggle("light", resolved === "light");
+  document.body.dataset.theme = theme;
+  const themeIcon = theme === "system" ? "monitor" : theme === "dark" ? "moon" : "sun";
+  if (themeToggle) {
+    themeToggle.innerHTML = `<i data-lucide="${themeIcon}"></i>`;
+    themeToggle.setAttribute("aria-label", `Color theme: ${theme[0].toUpperCase()}${theme.slice(1)}`);
+    themeToggle.title = `Color theme: ${theme[0].toUpperCase()}${theme.slice(1)} (click to change)`;
+    lucide.createIcons();
+  }
+  localStorage.setItem("theme", theme);
 }
-
-themeToggle.addEventListener("click", () => {
-  const isLight = document.body.classList.toggle("light");
-  themeToggle.innerHTML = (isLight ? '<i data-lucide="sun"></i>' : '<i data-lucide="moon"></i>') + '<span class="sidebar-label">Mode</span>';
-  localStorage.setItem("theme", isLight ? "light" : "dark");
-  lucide.createIcons();
+applyTheme(savedTheme);
+themeToggle?.addEventListener("click", () => {
+  const modes = ["light", "dark", "system"];
+  const current = localStorage.getItem("theme") || "light";
+  applyTheme(modes[(modes.indexOf(current) + 1) % modes.length]);
+});
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+  if ((localStorage.getItem("theme") || "light") === "system") applyTheme("system");
 });
 
 menuBtn?.addEventListener("click", (e) => {
@@ -871,6 +916,7 @@ menuBtn?.addEventListener("click", (e) => {
   if (isMobile) {
     const open = sidebarEl.classList.toggle("open");
     sidebarBackdrop?.classList.toggle("visible", open);
+    menuBtn.setAttribute("aria-expanded", String(open));
     document.body.style.overflow = open ? "hidden" : "auto";
   } else {
     sidebarEl.classList.toggle("collapsed");
@@ -881,6 +927,7 @@ menuBtn?.addEventListener("click", (e) => {
 sidebarBackdrop?.addEventListener("click", () => {
   sidebarEl?.classList.remove("open");
   sidebarBackdrop?.classList.remove("visible");
+  menuBtn?.setAttribute("aria-expanded", "false");
   document.body.style.overflow = "auto";
 });
 
@@ -888,6 +935,7 @@ window.addEventListener("resize", () => {
   if (window.innerWidth > 640 && sidebarEl?.classList.contains("open")) {
     sidebarEl.classList.remove("open");
     sidebarBackdrop?.classList.remove("visible");
+    menuBtn?.setAttribute("aria-expanded", "false");
     document.body.style.overflow = "auto";
   }
 });
@@ -917,6 +965,12 @@ if (chatHistory) {
 resetBtn?.addEventListener("click", async () => {
   hapticFeedback('heavy');
   startNewChat();
+  if (window.innerWidth <= 640) {
+    sidebarEl?.classList.remove("open");
+    sidebarBackdrop?.classList.remove("visible");
+    menuBtn?.setAttribute("aria-expanded", "false");
+    document.body.style.overflow = "auto";
+  }
 });
 
 /* bottom nav handlers removed */
@@ -937,6 +991,21 @@ imageInput.addEventListener("change", (e) => {
     lucide.createIcons();
   };
   reader.readAsDataURL(file);
+});
+
+attachmentInput?.addEventListener("change", () => {
+  const file = attachmentInput.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith("image/")) {
+    showNotification("This chat currently supports image attachments", "image");
+    attachmentInput.value = "";
+    return;
+  }
+  const transfer = new DataTransfer();
+  transfer.items.add(file);
+  imageInput.files = transfer.files;
+  imageInput.dispatchEvent(new Event("change", { bubbles: true }));
+  attachmentInput.value = "";
 });
 
 removeImageBtn.addEventListener("click", clearImage);
@@ -1004,7 +1073,7 @@ function cancelCurrentGeneration() {
   }
   isTyping = false;
   
-  solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Ask</span>';
+  solveBtn.innerHTML = '<i data-lucide="arrow-up"></i>';
   solveBtn.disabled = false;
   lucide.createIcons();
   
@@ -1087,7 +1156,7 @@ solveBtn.addEventListener("click", async () => {
   promptInput.value = "";
   autoGrow(promptInput);
   
-  solveBtn.innerHTML = '<i data-lucide="square"></i><span> Stop</span>';
+  solveBtn.innerHTML = '<i data-lucide="square"></i>';
   lucide.createIcons();
   isCancelled = false;
   currentAbortController = new AbortController();
@@ -1122,7 +1191,7 @@ solveBtn.addEventListener("click", async () => {
   } finally {
     currentAbortController = null;
     if (!isTyping && !isCancelled) {
-      solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Ask</span>';
+      solveBtn.innerHTML = '<i data-lucide="arrow-up"></i>';
       lucide.createIcons();
     }
     clearImage();
@@ -1178,7 +1247,7 @@ function typeWriter(text, rich = false, isImage = false, imageUrl = null) {
       aiBubble?.classList.remove("is-streaming");
       renderRichContent(target);
       if (!currentAbortController) {
-          solveBtn.innerHTML = '<i data-lucide="sparkles"></i><span> Ask</span>';
+          solveBtn.innerHTML = '<i data-lucide="arrow-up"></i>';
           lucide.createIcons();
       }
       if (isImage && imageUrl) renderImageDownload(imageUrl, target);

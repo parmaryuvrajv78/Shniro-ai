@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Floak AI | Account</title>
+    <title>Floak | Sign in</title>
     <meta name="description" content="Sign in to Floak, an AI study assistant for solving questions, analyzing images, generating quizzes, and saving study conversations.">
     
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,9 +13,9 @@
 
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
-    <meta name="theme-color" content="#0f1115">
+    <meta name="theme-color" content="#F8FAFC">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <style>
         :root {
@@ -764,17 +764,182 @@
                 display: none;
             }
         }
+        /* Floak chat-matched authentication */
+        :root {
+            --auth-bg: #F8FAFC;
+            --auth-card: #FFFFFF;
+            --auth-card-strong: #F1F5F9;
+            --auth-border: #E2E8F0;
+            --auth-border-strong: #CBD5E1;
+            --auth-text: #172033;
+            --auth-muted: #64748B;
+            --auth-faint: #94A3B8;
+            --auth-accent: #3478D4;
+            --auth-blue: #3478D4;
+            --auth-surface: #FFFFFF;
+            --auth-field: #FFFFFF;
+            --auth-danger: #DC2626;
+            --auth-success: #15803D;
+            --auth-radius: 12px;
+            --auth-shadow: 0 24px 64px rgba(15, 23, 42, .09);
+        }
+        body.auth-body {
+            min-height: 100dvh;
+            padding: 24px 16px;
+            display: grid;
+            place-items: center;
+            color: var(--auth-text);
+            background: #F8FAFC;
+        }
+        .auth-shell {
+            width: min(100%, 460px);
+            min-height: 0;
+            grid-template-columns: minmax(0, 1fr);
+            overflow: hidden;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 24px;
+            box-shadow: var(--auth-shadow);
+            backdrop-filter: none;
+        }
+        .auth-brand {
+            padding: 28px 32px 8px;
+            gap: 0;
+            border: 0;
+            background: #FFFFFF;
+        }
+        .brand-top { gap: 11px; color: #172033; font-size: 17px; }
+        .brand-top img { width: 38px; height: 38px; border-radius: 12px; box-shadow: none; }
+        .brand-copy, .brand-mini-panel, .brand-points { display: none !important; }
+        .auth-panel {
+            min-height: 0;
+            padding: 14px 32px 30px;
+            background: #FFFFFF;
+        }
+        .auth-panel-head { margin-bottom: 22px; }
+        .auth-eyebrow { color: #3478D4; }
+        .auth-panel-head h2 { color: #172033; font-size: 28px; letter-spacing: -.035em; }
+        .auth-panel-head p { color: #64748B; }
+        .auth-tabs {
+            padding: 4px;
+            background: #F1F5F9;
+            border: 1px solid #E2E8F0;
+            border-radius: 13px;
+        }
+        .auth-tab { color: #64748B; border-radius: 9px; }
+        .auth-tab[aria-selected="true"] { color: #1D4ED8; background: #FFFFFF; box-shadow: 0 1px 4px rgba(15,23,42,.1); }
+        .auth-message { color: #475569; background: #F8FAFC; border-color: #E2E8F0; border-radius: 12px; }
+        .auth-message.error { color: #B91C1C; background: #FEF2F2; border-color: #FECACA; }
+        .auth-message.success { color: #166534; background: #F0FDF4; border-color: #BBF7D0; }
+        .form-group label { color: #334155; }
+        .input-shell input {
+            min-height: 50px;
+            color: #172033;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+        }
+        .input-shell input::placeholder { color: #94A3B8; }
+        .input-shell input:focus {
+            background: #FFFFFF;
+            border-color: #3478D4;
+            box-shadow: 0 0 0 3px rgba(52,120,212,.13);
+        }
+        .input-shell > svg { color: #94A3B8; }
+        .password-toggle { color: #64748B; border-radius: 9px; }
+        .password-toggle:hover { color: #3478D4; background: #F1F5F9; }
+        .field-note { color: #64748B; }
+        .auth-btn {
+            min-height: 50px;
+            color: #FFFFFF;
+            background: #3478D4;
+            border: 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(52,120,212,.2);
+        }
+        .auth-btn:hover { background: #2869C2; box-shadow: 0 7px 16px rgba(52,120,212,.22); }
+        .auth-btn:disabled { background: #3478D4; }
+        .auth-footer { color: #64748B; }
+        .back-link, .inline-switch { color: #64748B; }
+        .back-link:hover, .inline-switch:hover { color: #3478D4; }
+        .toast {
+            color: #172033;
+            background: rgba(255,255,255,.97);
+            border-color: #E2E8F0;
+            box-shadow: 0 12px 32px rgba(15,23,42,.14);
+        }
+        body.auth-body[data-theme="dark"] {
+            --auth-bg: #101827;
+            --auth-card: #172033;
+            --auth-card-strong: #243149;
+            --auth-border: #334155;
+            --auth-border-strong: #475569;
+            --auth-text: #F8FAFC;
+            --auth-muted: #CBD5E1;
+            --auth-faint: #94A3B8;
+            --auth-surface: #172033;
+            --auth-field: #172033;
+            color: #F8FAFC;
+            background: #101827;
+        }
+        body.auth-body[data-theme="dark"] .auth-shell,
+        body.auth-body[data-theme="dark"] .auth-brand,
+        body.auth-body[data-theme="dark"] .auth-panel { background: #172033; border-color: #334155; }
+        body.auth-body[data-theme="dark"] .brand-top,
+        body.auth-body[data-theme="dark"] .auth-panel-head h2,
+        body.auth-body[data-theme="dark"] .form-group label { color: #F8FAFC; }
+        body.auth-body[data-theme="dark"] .auth-panel-head p,
+        body.auth-body[data-theme="dark"] .auth-footer,
+        body.auth-body[data-theme="dark"] .back-link,
+        body.auth-body[data-theme="dark"] .inline-switch { color: #CBD5E1; }
+        body.auth-body[data-theme="dark"] .auth-tabs { background: #101827; border-color: #334155; }
+        body.auth-body[data-theme="dark"] .auth-tab[aria-selected="true"] { color: #DBEAFE; background: #243149; box-shadow: none; }
+        body.auth-body[data-theme="dark"] .auth-message { color: #CBD5E1; background: #101827; border-color: #334155; }
+        body.auth-body[data-theme="dark"] .auth-message.error { color: #FECACA; background: #351D29; border-color: #71313C; }
+        body.auth-body[data-theme="dark"] .auth-message.success { color: #BBF7D0; background: #173329; border-color: #285B44; }
+        body.auth-body[data-theme="dark"] .input-shell input { color: #F8FAFC; background: #101827; border-color: #334155; }
+        body.auth-body[data-theme="dark"] .input-shell input:focus { border-color: #3478D4; }
+        body.auth-body[data-theme="dark"] .field-note { color: #94A3B8; }
+        body.auth-body[data-theme="dark"] .toast { color: #F8FAFC; background: #172033; border-color: #334155; }
+        @media (max-width: 520px) {
+            body.auth-body { min-height: 100dvh; padding: 16px; display: grid; place-items: safe center; background: #F8FAFC; }
+            .auth-shell { width: 100%; max-width: 460px; min-height: 0; border: 1px solid #E2E8F0; border-radius: 22px; background: #FFFFFF; box-shadow: var(--auth-shadow); }
+            .auth-brand { padding: 24px 22px 4px; background: #FFFFFF; }
+            .brand-top { font-size: 16px; }
+            .brand-top img { width: 36px; height: 36px; }
+            .auth-panel { min-height: 0; padding: 14px 22px 24px; justify-content: center; background: #FFFFFF; }
+            .auth-panel-head { margin-bottom: 18px; }
+            .auth-panel-head h2 { font-size: 26px; }
+            .auth-tabs { background: #F1F5F9; border-color: #E2E8F0; }
+            .auth-tab[aria-selected="true"] { background: #FFFFFF; }
+            .input-shell input { min-height: 50px; background: #FFFFFF; border-color: #E2E8F0; }
+            .auth-btn { min-height: 50px; }
+            .auth-footer { margin-top: 18px; padding-bottom: 0; }
+            body.auth-body[data-theme="dark"] { background: #101827; }
+            body.auth-body[data-theme="dark"] .auth-shell,
+            body.auth-body[data-theme="dark"] .auth-brand,
+            body.auth-body[data-theme="dark"] .auth-panel { background: #172033; border-color: #334155; }
+            body.auth-body[data-theme="dark"] .auth-tabs { background: #101827; border-color: #334155; }
+            body.auth-body[data-theme="dark"] .auth-tab[aria-selected="true"] { background: #243149; }
+            body.auth-body[data-theme="dark"] .input-shell input { background: #101827; border-color: #334155; }
+        }
     </style>
 </head>
 
 <body class="auth-body">
+    <script>
+        const storedAuthTheme = localStorage.getItem("theme") || "light";
+        document.body.dataset.theme = storedAuthTheme === "system"
+            ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+            : storedAuthTheme;
+    </script>
     <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 
     <main class="auth-shell" aria-label="Floak account">
         <section class="auth-brand" aria-label="Floak AI">
             <div class="brand-top">
-                <img src="icon.png" alt="Floak AI">
-                <span>Floak AI</span>
+                <img src="icon.png" alt="Floak logo">
+                <span>Floak</span>
             </div>
 
             <div class="brand-copy">
